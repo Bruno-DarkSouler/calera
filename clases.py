@@ -6,6 +6,16 @@ def aplicar_interfaz(accion):
 
 class Usuario:
     def __init__(self):
+        self.boton_iniciar_se = TK.Button(ventana, text="IniciarSesion", command=self.ventanaInicioSesion)
+        self.boton_registrarse = TK.Button(ventana, text="Registrarse", command=self.ventanaRegistro)
+        ultimos_proyectos = consultaSelect()
+        self.botones_ultimos_proyectos = [
+            TK.Button(ventana, text=ultimos_proyectos[0]["nombre"]),
+            TK.Button(ventana, text=ultimos_proyectos[1]["nombre"]),
+            TK.Button(ventana, text=ultimos_proyectos[2]["nombre"])
+        ]
+        self.boton_iniciar_se.grid(row=0, column=0)
+        self.boton_registrarse.grid(row=0, column=1)
         self.id = 0
         self.nombre = ""
         self.email = ""
@@ -34,30 +44,31 @@ class Usuario:
 #----------------------------------------------------------Interfaz-------------------------------------------------------------------
 
     def ventanaInicioSesion(self):
-        self.ventana = TK.Toplevel()
+        # ventana_inicio_se = Inicio_se(lambda: self.iniciar_ses("", ""))
+        ventana_inicio_se = Inicio_se(self.iniciar_ses)
 
-    def venatanaRegistro(self):
-        self.ventana = TK.Toplevel()
+    def ventanaRegistro(self):
+        ventana_inicio_se = Resgistro(self.registrarse)
+
+    def ventanaProyecto(self):
+        ventana_proyecto = Presentacion()
 
 #----------------------------------------------------------Metodos-------------------------------------------------------------------
 
     def iniciar_ses(self, contra, email):    #Debe cambiar los valores de los atributos del objeto para que coincidan con los datos del inicio de sesion
-        resultado = consultaSelect("SELECT", (contra, email))
-        if resultado == 1:
-            aplicar_interfaz("mensaje de error")
+        resultado = consultaSelectUnica("SELECT * FROM `usuarios` WHERE email = %s and contra = %s", (contra, email))
+        if resultado == None:
+            return 1
         else:
-            self.permiso = "Nuevo permiso"
-            self.nombre = "Nombre"
-            self.email = "Email"
-            aplicar_interfaz("cerrar ventana")
+            self.id = resultado["id"]
+            self.email = resultado["email"]
+            self.nombre = resultado["nombre"]
+            self.permiso = resultado["permiso"]
+            return 0
+
 
     def registrarse(self, nombre, email, contra):    #Debe ingresar en la base de datos los valores ingresados en el formulario de registro
-        resultado = consultaInsert("CONSULTA", ())
-        if resultado == 1:
-            aplicar_interfaz("Mensaje de error")
-        else:
-            aplicar_interfaz("cerrar ventana")
-            aplicar_interfaz("Abrir inicio de sesion")
+        resultado = consultaInsert("INSERT INTO `usuarios`(`nombre`, `contra`, `email`) VALUES (%s,%s,%s)", (nombre, email, contra))
 
     def crear_proyecto(self, nombre, descripcion, tema, grupo):    #Debe crear un nuevo proyecto en la base de datos si tiene los permisos necesarios
         resultado = consultaInsert("CONSULTA", (nombre, descripcion, grupo, tema))
@@ -111,9 +122,11 @@ class Usuario:
     def crear_grupo(self):    #Debera ingresar la cantidad de registros correspondientes en base a los usuarios asignados al grupo en cuestion
         print("hola")
 
-    
+class Interfaz:
+    def __init__(self):
+        self.boton_iniciar_se 
 
-class Proyecto():
+class Proyecto(Interfaz):
     def __init__(self, id, nombre, desc):
         self.id = id
         self.nombre = nombre
@@ -139,7 +152,7 @@ class Proyecto():
 
 
 
-class Evento():
+class Evento(Interfaz):
     def __init__(self, id, nombre, desc):
         self.id = id
         self.nombre = nombre
@@ -164,11 +177,19 @@ class Evento():
         self.desc = desc
 
 
-class Formulario():
-    def __init__(self, id, nombre, desc):
-        self.id = id
-        self.nombre = nombre
-        self.desc = desc
+class Formulario(Interfaz):
+    def __init__(self):
+        self.ventana = 0
+        self.accion = ""
+        self.etiquetas = [
+            TK.Label(ventana, text="Correo electrónico"),
+            TK.Label(ventana, text="Contraseña")
+        ]
+        self.entradas = [
+            TK.Entry(ventana),
+            TK.Entry(ventana)
+        ]
+        self.boton =  TK.Button(ventana, command=self.accion)
 
     def get_id(self):
         return self.id
@@ -189,12 +210,132 @@ class Formulario():
         self.desc = desc
 
 
+    def abrir_ventana(self):
+        for i in range(len(self.etiquetas)):
+            self.etiquetas[i].grid(row=i, column=0)
+            self.entradas[i].grid(row=i, column=1)
+        self.boton.grid(row=len(self.etiquetas), column=1, columnspan=2)
 
-class Etapa():
-    def __init__(self, id, nombre, email):
-        self.id = id
+
+
+class Inicio_se(Formulario):
+    def __init__(self, accion):
+        self.ventana = TK.Toplevel(ventana)
+        self.colores = ""
+        self.accion = accion
+        self.etiquetas = [
+            TK.Label(self.ventana, text="Correo electrónico"),
+            TK.Label(self.ventana, text="Contraseña")
+        ]
+        self.entradas = [
+            TK.Entry(self.ventana),
+            TK.Entry(self.ventana)
+        ]
+        self.boton =  TK.Button(self.ventana, command=lambda: self.accion(self.entradas[0].get(), self.entradas[1].get()))
+
+        self.abrir_ventana()
+
+
+
+class Resgistro(Formulario):
+    def __init__(self, accion):
+        self.ventana = TK.Toplevel(ventana)
+        self.colores = ""
+        self.accion = accion
+        self.etiquetas = [
+            TK.Label(self.ventana, text="Nombre"),
+            TK.Label(self.ventana, text="Correo electrónico"),
+            TK.Label(self.ventana, text="Contraseña")
+        ]
+        self.entradas = [
+            TK.Entry(self.ventana),
+            TK.Entry(self.ventana),
+            TK.Entry(self.ventana)
+        ]
+        self.boton =  TK.Button(self.ventana, command=lambda: self.accion(self.entradas[0].get(), self.entradas[1].get(), self.entradas[2].get()))
+
+        self.abrir_ventana()
+
+
+
+class Crear_proyecto(Formulario):
+    def __init__(self, accion):
+        self.ventana = 0
+        self.colores = ""
+        self.accion = accion
+        self.etiquetas = [
+            TK.Label(self.ventana, text="Nombre proyecto"),
+            TK.Label(self.ventana, text="Descripcion proyecto")
+        ]
+        self.entradas = [
+            TK.Entry(self.ventana),
+            TK.Entry(self.ventana)
+        ]
+        self.boton =  TK.Button(self.ventana, command=self.accion)
+        
+
+
+class Presentacion(Interfaz):
+    def __init__(self, id_grupo, id_presentacion, permiso):
+        self.ventana = TK.Toplevel(ventana)
+        self.etapas = consultaSelect("SELECT * FROM `presentaciones` WHERE id_solicitud = %s AND tipo = 'etapa' ORDER BY id DESC", (id_proyecto))
+        for i in range(len(self.id_etapas)):
+            self.botones_etapas.append(TK.Button(self.ventana, text=self.nombre_etapas[i], command= lambda: self.abrir_etapa(self.id_etapas[i])))
+        encabezado = ""
+        contenido = []
+        imagen = ""
+        self.id = id_proyecto
+        self.imagen = TK.PhotoImage(file= "../img/" + imagen)
+        self.etiqueta_imagen = TK.Label(image=self.imagen)
+        self.encabezado = TK.Label(self.ventana, text=encabezado)
+        self.contenido = []
+        for i in contenido:
+            self.contenido.append(TK.Label(self.ventana, text=i))
+
+        self.abrir_ventana()
+
+    def get_id(self):
+        return self.id
+
+    def set_id(self, id_proyecto):
+        self.id = id_proyecto
+
+    def get_nombre(self):
+        return self.nombre
+
+    def set_nombre(self, nombre):
         self.nombre = nombre
+
+    def get_email(self):
+        return self.email
+
+    def set_email(self, email):
         self.email = email
+
+    def abrir_ventana(self):
+        self.encabezado.grid(row=0, column=0)
+        self.etiqueta_imagen.grid(row=1, column=0)
+        for i in range(len(self.contenido)):
+            self.contenido[i].grid(row=i+2, column=0)
+
+    def abrir_etapa(self, id_presentacion):
+        self.nueva_etapa = Etapa(id)
+
+
+class Etapa(Interfaz):
+    def __init__(self, id):
+        self.ventana = TK.Toplevel(ventana)
+        self.id_etapas = []
+        self.nombre_etapas = []
+        self.id = id
+        encabezado = ""
+        contenido = []
+        self.encabezado = TK.Label(self.ventana, text=encabezado)
+        self.contenido = []
+        for i in contenido:
+            self.contenido.append(TK.Label(self.ventana, text=i))
+        
+        self.abrir_ventana()
 
     def get_id(self):
         return self.id
@@ -214,10 +355,7 @@ class Etapa():
     def set_email(self, email):
         self.email = email
 
-
-class Presentacion(Etapa):
-    def __init__(self, id, nombre, email, imagen):
-        self.id = id
-        self.nombre = nombre
-        self.email = email
-        self.imagen = imagen
+    def abrir_ventana(self):
+        self.encabezado.grid(row=0, column=0)
+        for i in range(len(self.contenido)):
+            self.contenido[i].grid(row=i+1, column=0)

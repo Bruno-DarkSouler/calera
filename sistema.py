@@ -3,28 +3,38 @@ import mysql.connector
 import tkinter as TK
 
 
-# conexion = mysql.connector.connect(
-#     host = "localhost",
-#     user = "root",
-#     password = "",
-#     database = "calera"
-# )
+conexion = mysql.connector.connect(
+    host = "localhost",
+    user = "root",
+    password = "",
+    database = "calera"
+)
 
-# def consultaInsert(consulta, conjunto_datos):
-#     cursor = conexion.cursor()
+def consultaInsert(consulta, conjunto_datos):
+    cursor = conexion.cursor()
 
-#     cursor.execute(consulta, conjunto_datos)
+    cursor.execute(consulta, conjunto_datos)
 
-#     conexion.commit()
+    conexion.commit()
+    
 
 
 
-# def consultaSelect(consulta, conjunto_datos):
-#     cursor = conexion.cursor()
+def consultaSelect(consulta, conjunto_datos):
+    cursor = conexion.cursor()
 
-#     cursor.execute(consulta, conjunto_datos)
+    cursor.execute(consulta, conjunto_datos)
 
-#     conexion.commit()
+    return cursor.fetchall()
+
+
+
+def consultaSelectUnica(consulta, conjunto_datos):
+    cursor = conexion.cursor()
+
+    cursor.execute(consulta, conjunto_datos)
+
+    return cursor.fetchone()
 
 ventana = TK.Tk()
 
