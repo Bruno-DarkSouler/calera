@@ -8,14 +8,21 @@ class Usuario:
     def __init__(self):
         self.boton_iniciar_se = TK.Button(ventana, text="IniciarSesion", command=self.ventanaInicioSesion)
         self.boton_registrarse = TK.Button(ventana, text="Registrarse", command=self.ventanaRegistro)
-        ultimos_proyectos = consultaSelect()
+        ultimos_proyectos = consultaSelect("SELECT 1 FROM `usuarios` LIMIT 3", ())
         self.botones_ultimos_proyectos = [
-            TK.Button(ventana, text=ultimos_proyectos[0]["nombre"]),
-            TK.Button(ventana, text=ultimos_proyectos[1]["nombre"]),
-            TK.Button(ventana, text=ultimos_proyectos[2]["nombre"])
+            # TK.Button(ventana, text=ultimos_proyectos[0]["nombre"]),
+            # TK.Button(ventana, text=ultimos_proyectos[1]["nombre"]),
+            # TK.Button(ventana, text=ultimos_proyectos[2]["nombre"])
+            TK.Button(ventana, text="Proyecto 1"),
+            TK.Button(ventana, text="Proyecto 2"),
+            TK.Button(ventana, text="Proyecto 3")
         ]
+        self.boton_buscador_proyectos = TK.Button(ventana, text="Ver más")
         self.boton_iniciar_se.grid(row=0, column=0)
         self.boton_registrarse.grid(row=0, column=1)
+        for i in range(len(self.botones_ultimos_proyectos)):
+            self.botones_ultimos_proyectos[i].grid(row=2, column=i + 2)
+        self.boton_buscador_proyectos.grid(row=len(self.botones_ultimos_proyectos) + 2, column=0)
         self.id = 0
         self.nombre = ""
         self.email = ""
@@ -71,7 +78,7 @@ class Usuario:
         resultado = consultaInsert("INSERT INTO `usuarios`(`nombre`, `contra`, `email`) VALUES (%s,%s,%s)", (nombre, email, contra))
 
     def crear_proyecto(self, nombre, descripcion, tema, grupo):    #Debe crear un nuevo proyecto en la base de datos si tiene los permisos necesarios
-        resultado = consultaInsert("CONSULTA", (nombre, descripcion, grupo, tema))
+        resultado = consultaInsert("INSERT INTO `usuarios`(`nombre`, `contra`, `email`) VALUES (%s,%s,%s)", (nombre, descripcion, grupo, tema))
         if resultado == 1:
             aplicar_interfaz("Mensaje de error")
         else:
@@ -177,6 +184,66 @@ class Evento(Interfaz):
         self.desc = desc
 
 
+
+class Buscador(Interfaz):
+    def __init__(self):
+        self.ventana = TK.Toplevel(ventana)
+        self.encabezado = TK.Label(self.ventana, text="Proyectos")
+        self.contenedor_lista = TK.Frame(self.ventana, borderwidth=3, relief="solid", bg="light blue")
+        self.contenedor_lista.config(height=400, width=300)
+        self.contenedor_lista.grid_propagate(False)
+        self.lienzo_buscador = TK.Canvas(self.contenedor_lista)
+        self.lista_proyectos = TK.Frame(self.lienzo_buscador)
+        self.barra_deslizadora = TK.Scrollbar(self.contenedor_lista)
+        self.lienzo_buscador.config(yscrollcommand=self.barra_deslizadora.set)
+
+        self.proyectos = [
+            TK.Label(self.contenedor_lista, text="CONSULTAR NOMBRES"),
+            TK.Label(self.contenedor_lista, text="CONSULTAR NOMBRES"),
+            TK.Label(self.contenedor_lista, text="CONSULTAR NOMBRES"),
+            TK.Label(self.contenedor_lista, text="CONSULTAR NOMBRES"),
+            TK.Label(self.contenedor_lista, text="CONSULTAR NOMBRES"),
+            TK.Label(self.contenedor_lista, text="CONSULTAR NOMBRES"),
+            TK.Label(self.contenedor_lista, text="CONSULTAR NOMBRES"),
+            TK.Label(self.contenedor_lista, text="CONSULTAR NOMBRES"),
+            TK.Label(self.contenedor_lista, text="CONSULTAR NOMBRES"),
+            TK.Label(self.contenedor_lista, text="CONSULTAR NOMBRES")
+            ]
+        self.botones_acceso = [
+            TK.Button(self.lista_proyectos),
+            TK.Button(self.lista_proyectos),
+            TK.Button(self.lista_proyectos),
+            TK.Button(self.lista_proyectos),
+            TK.Button(self.lista_proyectos),
+            TK.Button(self.lista_proyectos),
+            TK.Button(self.lista_proyectos),
+            TK.Button(self.lista_proyectos),
+            TK.Button(self.lista_proyectos),
+            TK.Button(self.lista_proyectos)
+            ]
+        self.botones_solicitar = [
+            TK.Button(self.lista_proyectos),
+            TK.Button(self.lista_proyectos),
+            TK.Button(self.lista_proyectos),
+            TK.Button(self.lista_proyectos),
+            TK.Button(self.lista_proyectos),
+            TK.Button(self.lista_proyectos),
+            TK.Button(self.lista_proyectos),
+            TK.Button(self.lista_proyectos),
+            TK.Button(self.lista_proyectos),
+            TK.Button(self.lista_proyectos)
+            ]
+        
+        for i in range(len(self.proyectos)):
+            self.proyectos[i].grid(row=i, column=0)
+            self.botones_acceso[i].grid(row=i, column=1)
+            self.botones_solicitar[i].grid(row=i, column=2)
+        self.lienzo_buscador.grid(row=0, column=0)
+        self.barra_deslizadora.grid(row=0, column=1)
+        self.contenedor_lista.grid(row=0, column=0)
+
+
+
 class Formulario(Interfaz):
     def __init__(self):
         self.ventana = 0
@@ -278,13 +345,13 @@ class Crear_proyecto(Formulario):
 class Presentacion(Interfaz):
     def __init__(self, id_grupo, id_presentacion, permiso):
         self.ventana = TK.Toplevel(ventana)
-        self.etapas = consultaSelect("SELECT * FROM `presentaciones` WHERE id_solicitud = %s AND tipo = 'etapa' ORDER BY id DESC", (id_proyecto))
+        self.etapas = consultaSelect("SELECT * FROM `presentaciones` WHERE id_solicitud = %s AND tipo = 'etapa' ORDER BY id DESC", (id_presentacion))
         for i in range(len(self.id_etapas)):
             self.botones_etapas.append(TK.Button(self.ventana, text=self.nombre_etapas[i], command= lambda: self.abrir_etapa(self.id_etapas[i])))
         encabezado = ""
         contenido = []
         imagen = ""
-        self.id = id_proyecto
+        self.id = id_presentacion
         self.imagen = TK.PhotoImage(file= "../img/" + imagen)
         self.etiqueta_imagen = TK.Label(image=self.imagen)
         self.encabezado = TK.Label(self.ventana, text=encabezado)
@@ -297,8 +364,8 @@ class Presentacion(Interfaz):
     def get_id(self):
         return self.id
 
-    def set_id(self, id_proyecto):
-        self.id = id_proyecto
+    def set_id(self, id_presentacion):
+        self.id = id_presentacion
 
     def get_nombre(self):
         return self.nombre

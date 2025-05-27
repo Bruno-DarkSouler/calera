@@ -11,6 +11,7 @@ def sus():
 
 
 usuario = Usuario()
+buscador = Buscador()
 
 
 # inicio_se = Inicio_se(sus)
