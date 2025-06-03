@@ -38,4 +38,4 @@ def consultaSelectUnica(consulta, conjunto_datos):
 
 ventana = TK.Tk()
 
-ventana.geometry("700x450")
+# ventana.geometry("700x450")
