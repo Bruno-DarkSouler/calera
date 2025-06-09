@@ -81,7 +81,7 @@ class Usuario:
         ventana_inicio_se = Resgistro(self.registrarse)
 
     def ventanaBuscador(self):
-        ventana_buscador = Buscador_proyectos()
+        ventana_buscador = Buscador_proyectos(self.permiso, self.id)
 
     def ventanaCrearProyecto(self):
         ventana_crear = Crear_proyecto(self.crear_proyecto)
@@ -119,6 +119,7 @@ class Usuario:
             self.email = resultado[3]
             self.nombre = resultado[1]
             self.permiso = resultado[4]
+            print(self.permiso)
             self.botonCrear()
             self.botonesSesion()
             return 0
@@ -140,7 +141,7 @@ class Usuario:
         self.iniciar_ses(contra, email)
 
     def crear_proyecto(self, nombre, desc):    #Debe crear un nuevo proyecto en la base de datos si tiene los permisos necesarios
-        consultaInsert("INSERT INTO `proyectos`(`nombre`, `descripcion`) VALUES (%s,%s)", (nombre, desc))
+        consultaInsert("INSERT INTO `proyectos`(`nombre`, `descripcion`, id_creador) VALUES (%s,%s,%s)", (nombre, desc, self.id))
 
     def enviar_form(self, id_form, respuestas):    #Debe enviar a la tabla "respuestas" de la base de datos los valores con los que se completo el formulario
         if self.permiso == "D" or self.permiso == "AE" or self.permiso == "AS":
@@ -239,7 +240,7 @@ class Evento(Interfaz):
 
 
 class Buscador_proyectos(Interfaz):
-    def __init__(self):
+    def __init__(self, permiso, id_usuario):
         self.ventana = TK.Toplevel(ventana)
         self.encabezado = TK.Label(self.ventana, text="Proyectos")
         self.contenedor_lista = TK.Frame(self.ventana, borderwidth=3, relief="solid", bg="light blue")
@@ -255,21 +256,23 @@ class Buscador_proyectos(Interfaz):
         self.barra_deslizadora.grid(row=0, column=1, sticky="ns")
         self.lista_proyectos = TK.Frame(self.lienzo_buscador)
 
-        self.proyectos = [
-            TK.Label(self.lista_proyectos, text="Robot SUMO"),
-            TK.Label(self.lista_proyectos, text="SONUS"),
-            TK.Label(self.lista_proyectos, text="Mesa abatible")
-            ]
-        self.botones_acceso = [
-            TK.Button(self.lista_proyectos, text="Ver más"),
-            TK.Button(self.lista_proyectos, text="Ver más"),
-            TK.Button(self.lista_proyectos, text="Ver más")
-            ]
-        self.botones_solicitud = [
-            TK.Button(self.lista_proyectos, text="Solicitar"),
-            TK.Button(self.lista_proyectos, text="Solicitar"),
-            TK.Button(self.lista_proyectos, text="Solicitar", command=lambda: self.ventanaFormulario(1))
-        ]
+        proyectos = consultaSelect("SELECT `id`, `nombre`, `descripcion`, `tema` FROM `proyectos`", ())
+
+
+        self.proyectos = []
+        self.botones_acceso = []
+        self.botones_solicitud = []
+
+        for i in proyectos:
+            self.proyectos.append(
+                TK.Label(self.lista_proyectos, text=i[1])
+            )
+            self.botones_acceso.append(
+                TK.Button(self.lista_proyectos, text="Ver más", command=lambda: self.ventanaPresentacion(i[0], permiso))
+            )
+            self.botones_solicitud.append(
+                TK.Button(self.lista_proyectos, text="Solicitar", command=lambda: self.ventanaFormulario(1, id_usuario, False))
+            )
 
         self.lista_proyectos.config(bg="lightgreen")
         self.lienzo_buscador.create_window((0, 0), window=self.lista_proyectos, anchor="nw")
@@ -282,8 +285,11 @@ class Buscador_proyectos(Interfaz):
         self.lienzo_buscador.config(scrollregion=self.lienzo_buscador.bbox("all"))
         self.encabezado.grid(row=0, column=0)
     
-    def ventanaFormulario(self, id_proyecto):
-        aux = Formulario(id_proyecto, 1)
+    def ventanaFormulario(self, id_proyecto, id_usuario, id_grupo):
+        aux = Formulario_solicitar(id_proyecto, id_usuario, id_grupo)
+
+    def ventanaPresentacion(self, id_proyecto):
+        aux = Presentacion(id_proyecto, self.permiso)
         
 
 
@@ -349,6 +355,73 @@ class Formulario(Interfaz):
             self.etiquetas[i].grid(row=i, column=0)
             self.entradas[i].grid(row=i, column=1)
         self.boton.grid(row=len(self.etiquetas), column=1, columnspan=2)
+
+
+
+class Formulario_solicitar(Interfaz):
+    def __init__(self, id_proyecto, id_usuario, id_grupo):
+        if id_grupo == False:
+            consultaInsert("INSERT INTO `grupos`() VALUES ()", ())
+            self.id_grupo = consultaSelectUnica("SELECT MAX(`id`) FROM `grupos`", ())
+            consultaInsert("INSERT INTO `usuarios_grupos`(`id_grupo`, `id_usuario`, `rol`) VALUES (%s,%s,%s)", (id_usuario, self.id_grupo, "lider"))
+        else:
+            self.id_grupo = id_grupo
+        usuarios = consultaSelect("SELECT u.`id`, u.`nombre`, u.`contra`, u.`email`, u.`permisos`, EXISTS(SELECT 1 FROM usuarios_grupos ug WHERE u.id = ug.id_usuario AND ug.id_grupo = %s) AS yaEnGrupo FROM `usuarios` u", (self.id_grupo))
+        
+        self.ventana = TK.Toplevel(ventana)
+        
+        self.usuarios = []
+        self.contenedor_lista = TK.Frame(self.ventana, borderwidth=3, relief="solid", bg="light blue")
+        self.contenedor_lista.configure(height=10, width=10)
+        self.contenedor_lista.grid(row=1, column=0, sticky="nsew")
+        self.contenedor_lista.grid_rowconfigure(1, weight=1)
+        self.contenedor_lista.grid_columnconfigure(0, weight=1)
+        self.lienzo_buscador = TK.Canvas(self.contenedor_lista)
+        self.barra_deslizadora = TK.Scrollbar(self.contenedor_lista, orient="vertical", command=self.lienzo_buscador.yview)
+        self.lienzo_buscador.configure(yscrollcommand=self.barra_deslizadora.set)
+        self.lienzo_buscador.grid(row=0, column=0, sticky="nswe")
+        self.barra_deslizadora.grid(row=0, column=1, sticky="ns")
+        self.lista_usuarios = TK.Frame(self.lienzo_buscador)
+
+        for i in usuarios:
+            self.usuarios.append((
+                TK.Label(self.lista_usuarios, text=i[1]),
+                TK.Button(self.lista_usuarios, text="Agregar", command=lambda: self.agregarUsuario(i[0])),
+                TK.Button(self.lista_usuarios, text="Eliminar", command=lambda: self.eliminarUsuario(i[0]))
+            ))
+            self.usuarios[-1][0].grid(row=len(self.usuarios), column=0)
+            self.usuarios[-1][1].grid(row=len(self.usuarios), column=1)
+            self.usuarios[-1][2].grid(row=len(self.usuarios), column=2)
+
+        self.lista_usuarios.config(bg="lightgreen")
+        self.lienzo_buscador.create_window((0, 0), window=self.lista_usuarios, anchor="nw")
+        self.lista_usuarios.update_idletasks()
+        self.lienzo_buscador.config(scrollregion=self.lienzo_buscador.bbox("all"))
+
+    def get_id(self):
+        return self.id
+
+    def set_id(self, id):
+        self.id = id
+
+    def get_nombre(self):
+        return self.nombre
+
+    def set_nombre(self, nombre):
+        self.nombre = nombre
+
+    def get_desc(self):
+        return self.desc
+
+    def set_desc(self, desc):
+        self.desc = desc
+
+
+    def agregarUsuario(self, id_usuario):
+        consultaInsert("INSERT INTO `usuarios_grupos`(`id_grupo`, `id_usuario`) VALUES (%s, %s)", (self.id_grupo, id_usuario))
+
+    def eliminarUsuario(self, id_usuario):
+        consultaInsert("UPDATE `usuarios_grupos` SET `estado`='[value-5]' WHERE id_usuario = %s", (id_usuario))
 
 
 
@@ -445,8 +518,10 @@ class Presentacion(Interfaz):
                 TK.Label(self.contenido_cuerpo[-1], text=contenido[i]["subtitulo"]),
                 TK.Label(self.contenido_cuerpo[-1], text=contenido[i]["contenido"])
             ))
+            self.contenido_cuerpo[-1].grid(row=i, column=0)
+            self.cuerpo[-1][0].grid(row=0, column=1)
+            self.cuerpo[-1][1].grid(row=1, column=1)
 
-        self.abrir_ventana()
 
     def get_id(self):
         return self.id
@@ -512,3 +587,78 @@ class Etapa(Interfaz):
         self.encabezado.grid(row=0, column=0)
         for i in range(len(self.contenido)):
             self.contenido[i].grid(row=i+1, column=0)
+
+
+
+class Perfil(Interfaz):
+    def __init__(self, id_usuario, permiso, nombre, email):
+        
+        invitaciones = consultaSelect("SELECT `id`, `id_grupo`, `id_usuario`, `rol`, `estado` FROM `usuarios_grupos` WHERE id_usuario = %s AND estado = 'pendiente'", (id_usuario))
+
+        self.ventana = TK.Toplevel(ventana)
+        self.etiqueta_perfil = TK.Label(self.ventana, text="Perfil")
+        self.contenedor_datos = TK.Frame(self.ventana)
+        self.etiqueta_nombre = [
+            TK.Label(self.ventana, text="Nombre: "),
+            TK.Label(self.ventana, text="")
+            ]
+        self.etiqueta_id = [
+            TK.Label(self.ventana, text="ID: "),
+            TK.Label(self.ventana, text="")
+            ]
+        self.etiqueta_email = [
+            TK.Label(self.ventana, text="Email: "),
+            TK.Label(self.ventana, text="")
+        ]
+        self.etiqueta_permiso = [
+            TK.Label(self.ventana, text="Permisos: "),
+            TK.Label(self.ventana, text="")
+        ]
+        self.etiqueta_solicitudes = TK.Label(self.ventana, text="Solicitudes")
+
+        self.solicitudes = []
+
+        self.contenedor_solicitudes = TK.Frame(self.ventana, borderwidth=3, relief="solid", bg="light blue")
+        self.contenedor_solicitudes.configure(height=10, width=10)
+        self.contenedor_solicitudes.grid_rowconfigure(1, weight=1)
+        self.contenedor_solicitudes.grid_columnconfigure(0, weight=1)
+        self.lienzo_solicitudes = TK.Canvas(self.contenedor_solicitudes)
+        self.barra_deslizadora_solicitudes = TK.Scrollbar(self.contenedor_solicitudes, orient="vertical", command=self.lienzo_solicitudes.yview)
+        self.lienzo_solicitudes.configure(yscrollcommand=self.barra_deslizadora_solicitudes.set)
+        self.lienzo_solicitudes.grid(row=0, column=0, sticky="nswe")
+        self.barra_deslizadora_solicitudes.grid(row=0, column=1, sticky="ns")
+        self.lista_solicitudes = TK.Frame(self.lienzo_solicitudes)
+
+
+
+        self.lista_solicitudes.config(bg="lightgreen")
+        self.lienzo_solicitudes.create_window((0, 0), window=self.lista_solicitudes, anchor="nw")
+        self.lista_solicitudes.update_idletasks()
+        self.lienzo_solicitudes.config(scrollregion=self.lienzo_solicitudes.bbox("all"))
+
+
+        self.invitaciones = []
+
+        self.contenedor_invitaciones = TK.Frame(self.ventana, borderwidth=3, relief="solid", bg="light blue")
+        self.contenedor_invitaciones.configure(height=10, width=10)
+        self.contenedor_invitaciones.grid_rowconfigure(1, weight=1)
+        self.contenedor_invitaciones.grid_columnconfigure(0, weight=1)
+        self.lienzo_invitaciones = TK.Canvas(self.contenedor_invitaciones)
+        self.barra_deslizadora_invitaciones = TK.Scrollbar(self.contenedor_invitaciones, orient="vertical", command=self.lienzo_invitaciones.yview)
+        self.lienzo_invitaciones.configure(yscrollcommand=self.barra_deslizadora_invitaciones.set)
+        self.lienzo_invitaciones.grid(row=0, column=0, sticky="nswe")
+        self.barra_deslizadora_invitaciones.grid(row=0, column=1, sticky="ns")
+        self.lista_invitaciones = TK.Frame(self.lienzo_invitaciones)
+
+        for i in invitaciones:
+            self.invitaciones.append(
+                TK.Label(self.lista_invitaciones, text=i[0]),
+                TK.Button(self.lista_invitaciones, text="Aceptar"),
+                TK.Button(self.lista_invitaciones, text="Rechazar")
+            )
+            
+
+        self.lista_invitaciones.config(bg="lightgreen")
+        self.lienzo_invitaciones.create_window((0, 0), window=self.lista_invitaciones, anchor="nw")
+        self.lista_invitaciones.update_idletasks()
+        self.lienzo_invitaciones.config(scrollregion=self.lienzo_invitaciones.bbox("all"))
