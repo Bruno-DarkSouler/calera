@@ -1,7 +1,5 @@
 from clases import *
 
-def sus():
-    print("hola")
 # ventana = TK.Tk()
 
 # nueva = TK.Toplevel(ventana)
