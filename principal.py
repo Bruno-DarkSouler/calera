@@ -1,21 +1,8 @@
 from clases import *
 
-# ventana = TK.Tk()
+app = QW.QApplication()
 
-# nueva = TK.Toplevel(ventana)
-# lol = input("sus")
+sesion = {}
+grupos_proyecto = VentanaPrincipal()
 
-# nueva = TK.Toplevel(ventana)
-
-
-usuario = Usuario()
-# buscador = Buscador()
-
-
-# inicio_se = Inicio_se(sus)
-# registro = Resgistro(sus)
-# crear_pro = Crear_proyecto(sus)
-
-# inicio_se.abrir_ventana()
-
-ventana.mainloop()
+app.exec()

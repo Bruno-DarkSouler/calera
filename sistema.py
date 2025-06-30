@@ -1,41 +1,34 @@
 import mysql.connector
-# import customtkinter
-import tkinter as TK
 
+class Conexion():
+    def __init__(self):
+        self.conexion = mysql.connector.connect(
+        host = "localhost",
+        user = "root",
+        password = "",
+        database = "calera"
+        )
+        # self.consultaSelect("SELECT 1 FROM usuarios;", tuple([]))
 
-conexion = mysql.connector.connect(
-    host = "localhost",
-    user = "root",
-    password = "",
-    database = "calera"
-)
+    def consultaInsert(self, consulta, conjunto_datos):
+        cursor = self.conexion.cursor()
+        cursor.execute(consulta, conjunto_datos)
+        self.conexion.commit()
 
-def consultaInsert(consulta, conjunto_datos):
-    cursor = conexion.cursor()
+    def consultaSelect(self, consulta, conjunto_datos):
+        cursor = self.conexion.cursor()
+        cursor.execute(consulta, conjunto_datos)
+        return cursor.fetchall()
 
-    cursor.execute(consulta, conjunto_datos)
+    def consultaSelectUnica(self, consulta, conjunto_datos):
+        cursor = self.conexion.cursor()
+        cursor.execute(consulta, conjunto_datos)
+        return cursor.fetchone()
+    
 
-    conexion.commit()
+conexion = Conexion()
+
     
 
 
 
-def consultaSelect(consulta, conjunto_datos):
-    cursor = conexion.cursor()
-
-    cursor.execute(consulta, conjunto_datos)
-
-    return cursor.fetchall()
-
-
-
-def consultaSelectUnica(consulta, conjunto_datos):
-    cursor = conexion.cursor()
-
-    cursor.execute(consulta, conjunto_datos)
-
-    return cursor.fetchone()
-
-ventana = TK.Tk()
-
-# ventana.geometry("700x450")

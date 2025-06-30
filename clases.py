@@ -1,683 +1,548 @@
-from sistema import *
+from PySide6 import QtWidgets as QW
+from PySide6 import QtGui as QG
+from PySide6.QtCore import Qt
 
-
-
-
-def aplicar_interfaz(accion):
-    print(accion)
-
-class Usuario:
+class VentanaPrincipal(QW.QMainWindow):
     def __init__(self):
-        self.id = 0
-        self.nombre = ""
-        self.email = ""
-        self.permiso = "UE"
+        super().__init__()
+        self.resize(768, 450)
+        self.setStyleSheet(
+            "background-color: #000d20;"
+        )
+        self.setWindowTitle("Calera")
 
-        ultimos_proyectos = consultaSelect("SELECT * FROM `proyectos` ORDER BY id DESC LIMIT 3", ())
+        #Datos de sesion
+        self.sesion = {
+            "id": 0,
+            "nombre": "",
+            "permiso": "UE"
+        }
 
-        self.cabecera = TK.Frame(ventana)
-        self.cuerpo_proyectos = TK.Frame(ventana)
-        self.cuerpo_opciones = TK.Frame(ventana)
-        self.pie = TK.Frame(ventana)
-        self.boton_iniciar_se = TK.Button(self.cabecera, text="Iniciar Sesión", command=self.ventanaInicioSesion)
-        self.boton_registrarse = TK.Button(self.cabecera, text="Registrarse", command=self.ventanaRegistro)
-        self.boton_cerrar_se = TK.Button(self.cabecera) #Falta terminar
-        self.boton_perfil = TK.Button(self.cabecera, text="Perfil", command=self.ventanaPerfil)
-        self.boton_buscador_proyectos = TK.Button(self.cuerpo_opciones, text="Ver más", command=self.ventanaBuscador)
-        self.boton_crear = TK.Button(self.cuerpo_opciones, text="Crear proyecto", command=self.ventanaCrearProyecto)
-        self.etiqueta_sin_proyectos = TK.Label(self.cuerpo_proyectos, text="No hay proyectos subidos")
-        self.etiqueta_pie = TK.Label(self.pie, text="Desarrollado por Bruno Fornasar González")
-        self.botones_ultimos_proyectos = []
-        for i in ultimos_proyectos:
-            self.botones_ultimos_proyectos.append(TK.Button(self.cuerpo_proyectos, text=i[1], command=lambda: self.ventanaProyecto(i[0])))
-        self.btn_test = TK.Button(ventana, text="Testeo", command=self.cerrar_ses)
-
-
-
-        self.cabecera.grid(row=0, column=0)
-        self.cuerpo_proyectos.grid(row=1, column=0)
-        self.cuerpo_opciones.grid(row=2, column=0)
-        self.pie.grid(row=3, column=0)
-        if self.id == 0:
-            self.boton_iniciar_se.grid(row=0, column=0, sticky="e")
-            self.boton_registrarse.grid(row=0, column=1, sticky="e")
-        else:
-            self.boton_perfil.grid(row=0, column=0)
-        if ultimos_proyectos == []:
-            self.etiqueta_sin_proyectos.grid(row=0, column=0, sticky="ew")
-        else:
-            for i in range(len(self.botones_ultimos_proyectos)):
-                self.botones_ultimos_proyectos[i].grid(row=0, column=i)
-        self.boton_buscador_proyectos.grid(row=0, column=0)
-        self.etiqueta_pie.grid(row=0, column=0)
+        #Contenedor central
+        contenedor_central = QW.QWidget(self)
+        self.setCentralWidget(contenedor_central)
         
+        #Contenedor general de los objetos
+        contenedor_menu = QW.QHBoxLayout(contenedor_central)
+        contenedor_perfil = QW.QVBoxLayout()
+        contenedor_proyectos = QW.QVBoxLayout()
+        contenedor_acciones_perfil = QW.QVBoxLayout()
+        contenedor_invitaciones = QW.QVBoxLayout()
 
-#----------------------------------------------------------Getters y Setters--------------------------------------------------------
+        #Contenedores de estilo
+        cuadro_contenedor_perfil = QW.QFrame()
+        cuadro_contenedor_proyectos = QW.QFrame()
 
-    def get_id(self):
-        return self.id
+        #Area de scroll de invitaciones
+        self.area_scroll_invitaciones = QW.QScrollArea()
+        self.area_scroll_invitaciones.setWidgetResizable(True)
+        self.ventana_area_scroll_invitaciones = QW.QWidget()
+        self.contenedor_scroll_invitaciones = QW.QVBoxLayout(self.ventana_area_scroll_invitaciones)
+
+        #Botones
+        self.boton_iniciar_sesion = QW.QPushButton("Iniciar Sesión")
+        self.boton_registrar_usuario = QW.QPushButton("Registrarse")
+        self.boton_cerrar_sesion = QW.QPushButton("Cerrar Sesión")
+        boton_abrir_buscador_proyectos = QW.QPushButton("Ver más")
+
+        #Acciones de los botones
+        boton_abrir_buscador_proyectos.clicked.connect(lambda: self.abrirBuscadorProyectos())
+        self.boton_iniciar_sesion.clicked.connect(lambda: self.abrirInicioSesion())
+        self.boton_registrar_usuario.clicked.connect(lambda: self.abrirRegistroUsuario())
+        self.boton_cerrar_sesion.clicked.connect(lambda: self.cerrarSesion())
+
+        #Etiqueta
+        etiqueta_creditos = QW.QLabel("Desarrollado por Bruno Fornasar González")
+        etiqueta_invitaciones = QW.QLabel("Invitaciones")
+        self.etiqueta_no_invitaciones = QW.QLabel("No se han encontrado resultados")
+        #  ¯\_(ツ)_/¯ para usar en algún momento
+
+        #Foto de perfil
+        imagen_perfil = QW.QLabel("Inicie Sesión")
+        imagen_logo = QW.QLabel("Calera")
+
+        #Agregar widgets al contenedor
+        contenedor_proyectos.addWidget(imagen_logo)
+        contenedor_perfil.addWidget(imagen_perfil, 2)
+        contenedor_perfil.addWidget(self.boton_iniciar_sesion, 2)
+        contenedor_perfil.addWidget(self.boton_registrar_usuario, 2)
+        contenedor_perfil.addWidget(self.boton_cerrar_sesion, 4)
+        self.boton_cerrar_sesion.hide()
+        contenedor_proyectos.addWidget(boton_abrir_buscador_proyectos)
+        contenedor_proyectos.addWidget(etiqueta_creditos)
+        contenedor_invitaciones.addWidget(etiqueta_invitaciones, 2)
+
+        #Agregar contenedores
+        contenedor_menu.addWidget(cuadro_contenedor_perfil, 3)
+        contenedor_menu.addWidget(cuadro_contenedor_proyectos, 7)
+        cuadro_contenedor_perfil.setLayout(contenedor_perfil)
+        cuadro_contenedor_proyectos.setLayout(contenedor_proyectos)
+        contenedor_perfil.addLayout(contenedor_acciones_perfil, 5)
+        contenedor_perfil.addLayout(contenedor_invitaciones, 5)
+        contenedor_invitaciones.addWidget(self.area_scroll_invitaciones, 8)
+        self.area_scroll_invitaciones.setWidget(self.ventana_area_scroll_invitaciones)
+        self.ventana_area_scroll_invitaciones.setLayout(self.contenedor_scroll_invitaciones)
+
+        #Estilos contenedores
+        cuadro_contenedor_perfil.setStyleSheet(
+            "background-color: #001a40;" \
+            "border-radius: 10px;"
+        )
+        cuadro_contenedor_proyectos.setStyleSheet(
+            "background-color: #001a40;" \
+            "border-radius: 10px;"
+        )
+        self.ventana_area_scroll_invitaciones.setStyleSheet(
+            """background-color: #000d20;"""
+        )
+
+        #Estilos etiquetas
+        imagen_perfil.setAlignment(Qt.AlignCenter)
+        imagen_perfil.setStyleSheet(
+            "font-size: 30px;"
+        )
+        etiqueta_invitaciones.setAlignment(Qt.AlignCenter)
+        etiqueta_invitaciones.setStyleSheet(
+            """
+            font-size: 20px;
+            color: #dfecff;"""
+        )
+        self.etiqueta_no_invitaciones.setAlignment(Qt.AlignCenter)
+        self.etiqueta_no_invitaciones.setStyleSheet(
+            """
+            color: #dfecff;"""
+        )
+
+        #Estilos botones
+        estilos_generales_botones = "QPushButton{" \
+        "background-color: #004dbf;" \
+        "border-radius: 3px;" \
+        "color: #dfecff;" \
+        "padding: 10px 0px;" \
+        "font-size: 15px;" \
+        "}" \
+        "QPushButton:hover{" \
+        "background-color: #00409f;" \
+        "}"
+        self.boton_iniciar_sesion.setStyleSheet(estilos_generales_botones)
+        self.boton_cerrar_sesion.setStyleSheet(estilos_generales_botones)
+        self.boton_registrar_usuario.setStyleSheet(estilos_generales_botones)
+        boton_abrir_buscador_proyectos.setStyleSheet(estilos_generales_botones)
+
+        #Estilos imágenes
+        imagen_logo.setStyleSheet(
+            """
+            font-size: 100px;
+            color: #dfecff;"""
+        )
+        imagen_logo.setAlignment(Qt.AlignCenter)
+
+        self.show()
+
+    def mostrarInvitaciones(self):
+        invitaciones = [(1, "Robot SUMO"), (1, "Robot SUMO")]
+        if invitaciones != []:
+            for i in invitaciones:
+                invitacion = Invitaciones(i[0], i[1])
+                self.contenedor_scroll_invitaciones.addWidget(invitacion)
+        else:
+            self.contenedor_scroll_invitaciones.addWidget(self.etiqueta_no_invitaciones)
+
+    def abrirBuscadorProyectos(self):
+        buscador_proyectos = BuscadorProyectos(self.sesion)
     
-    def set_id(self, valor):
-        self.id = valor
+    def abrirInicioSesion(self):
+        # formulario = FormularioInicioSesion(self.sesion)
+        self.boton_cerrar_sesion.show()
+        self.boton_iniciar_sesion.hide()
+        self.boton_registrar_usuario.hide()
+        self.mostrarInvitaciones()
 
-    def get_nombre(self):
-        return self.nombre
-    
-    def set_nombre(self, valor):
-        self.nombre = valor
+    def abrirRegistroUsuario(self):
+        # formulario = FormularioRegistro(self.sesion)
+        self.boton_cerrar_sesion.show()
+        self.boton_iniciar_sesion.hide()
+        self.boton_registrar_usuario.hide()
 
-    def get_email(self):
-        return self.email
-    
-    def set_email(self, valor):
-        self.email = valor
+    def cerrarSesion(self):
+        self.boton_cerrar_sesion.hide()
+        self.boton_iniciar_sesion.show()
+        self.boton_registrar_usuario.show()
 
-#----------------------------------------------------------Interfaz-------------------------------------------------------------------
+    def iniciarSesion(self, email, contra):
+        self.sesion["nombre"]
 
-    def ventanaInicioSesion(self):
-        # ventana_inicio_se = Inicio_se(lambda: self.iniciar_ses("", ""))
-        ventana_inicio_se = Inicio_se(self.iniciar_ses)
+class Invitaciones(QW.QFrame):
+    def __init__(self, id_invitacion, proyecto):
+        super().__init__()
 
-    def ventanaRegistro(self):
-        ventana_inicio_se = Resgistro(self.registrarse)
+        #Contenedores
+        contenedor_central = QW.QVBoxLayout()
+        contenedor_botones = QW.QHBoxLayout()
+        contenedor_etiquetas = QW.QVBoxLayout()
+        
+        #Contenedores estilos
+        cuadro_contenedor_etiquetas = QW.QFrame()
 
-    def ventanaBuscador(self):
-        ventana_buscador = Buscador_proyectos(self.permiso, self.id)
+        #Configurar contenedor central
+        self.setLayout(contenedor_central)
 
-    def ventanaCrearProyecto(self):
-        ventana_crear = Crear_proyecto(self.crear_proyecto)
+        #Etiquetas
+        etiqueta_notificacion = QW.QLabel("Te invitaron de...")
+        etiqueta_nombre_proyecto = QW.QLabel(proyecto)
 
-    def ventanaProyecto(self, id):
-        ventana_proyecto = Presentacion(id, self.permiso)
-    
-    def ventanaPerfil(self):
-        ventana_perfil = Perfil(self.id, self.permiso, self.nombre, self.email)
+        #Botones
+        boton_aceptar = QW.QPushButton("Aceptar")
+        boton_rechazar = QW.QPushButton("Rechazar")
 
-#----------------------------------------------------------Actualizar interfaz-------------------------------------------------------------------
+        #Agregar elementos
+        contenedor_botones.addWidget(boton_aceptar)
+        contenedor_botones.addWidget(boton_rechazar)
+        contenedor_etiquetas.addWidget(etiqueta_notificacion)
+        contenedor_etiquetas.addWidget(etiqueta_nombre_proyecto)
 
-    def botonCrear(self):
-        if self.permiso == "AD":
-            self.boton_crear.grid(row=1, column=0, sticky="ew")
-        else:
-            self.boton_crear.grid_forget()
+        #Agregar contenedores
+        contenedor_central.addWidget(cuadro_contenedor_etiquetas)
+        contenedor_central.addLayout(contenedor_botones)
+        cuadro_contenedor_etiquetas.setLayout(contenedor_etiquetas)
 
-    def botonesSesion(self):
-        if self.id == 0:
-            self.boton_perfil.grid_forget()
-            self.boton_iniciar_se.grid(row=0, column=0)
-            self.boton_registrarse.grid(row=0, column=1)
-        else:
-            self.boton_registrarse.grid_forget()
-            self.boton_iniciar_se.grid_forget()
-            self.boton_perfil.grid(row=0, column=0)
-
-#----------------------------------------------------------Metodos-------------------------------------------------------------------
-
-    def iniciar_ses(self, contra, email):    #Debe cambiar los valores de los atributos del objeto para que coincidan con los datos del inicio de sesion
-        resultado = consultaSelectUnica("SELECT * FROM `usuarios` WHERE email = %s and contra = %s", (contra, email))
-        if resultado == None:
-            return 1
-        else:
-            print(resultado)
-            self.id = resultado[0]
-            self.email = resultado[3]
-            self.nombre = resultado[1]
-            self.permiso = resultado[4]
-            print(self.permiso)
-            self.botonCrear()
-            self.botonesSesion()
-            return 0
-
-    def cerrar_ses(self):
-        if self.id != 0:
-            self.id = 0
-            self.boton_cerrar_se.grid_forget()
-            self.boton_iniciar_se.grid(row=0, column=0)
-            self.boton_registrarse.grid(row=0, column=1)
-        else:
-            self.id = 1
-            self.boton_registrarse.grid_forget()
-            self.boton_iniciar_se.grid_forget()
-            self.boton_cerrar_se.grid(row=0, column=0)
-
-    def registrarse(self, nombre, email, contra):    #Debe ingresar en la base de datos los valores ingresados en el formulario de registro
-        resultado = consultaInsert("INSERT INTO `usuarios`(`nombre`, `email`, `contra`) VALUES (%s,%s,%s)", (nombre, email, contra))
-        self.iniciar_ses(contra, email)
-
-    def crear_proyecto(self, nombre, desc):    #Debe crear un nuevo proyecto en la base de datos si tiene los permisos necesarios
-        consultaInsert("INSERT INTO `proyectos`(`nombre`, `descripcion`, id_creador) VALUES (%s,%s,%s)", (nombre, desc, self.id))
-
-    def enviar_form(self, id_form, respuestas):    #Debe enviar a la tabla "respuestas" de la base de datos los valores con los que se completo el formulario
-        if self.permiso == "D" or self.permiso == "AE" or self.permiso == "AS":
-            consultaInsert("Insert", ())
-
-    def crear_form(self, nombre, desc):    #Debe crear un nuevo formulario en la base de datos
-        consultaInsert("INSERT INTO `proyectos`(`nombre`, `descripcion`) VALUES (%s,%s)", (nombre, desc))
-
-    def crear_evento(self):    #Debe crear un nuevo evento en la base de datos
-        print("hola")
-
-    def ver_proyectos(self, permiso_requerido):    #Devolvera un "true" si tiene el permiso requerido, por el contrario, un "false"
-        print("hola")
-
-    def subir_etapa(self):    #Debera subir la informacion ingresada en el formulario a la base de datos en la tabla "etapas"
-        print("hola")
-
-    def subir_presentacion(self):    #Debera subir la informacion ingresada en el formulario a la base de datos en la tabla "presentacion"
-        print("hola")
-
-    def crear_grupo(self):    #Debera ingresar la cantidad de registros correspondientes en base a los usuarios asignados al grupo en cuestion
-        print("hola")
-
-    def crear_grupo(self):    #Debera ingresar la cantidad de registros correspondientes en base a los usuarios asignados al grupo en cuestion
-        print("hola")
-
-    def crear_grupo(self):    #Debera ingresar la cantidad de registros correspondientes en base a los usuarios asignados al grupo en cuestion
-        print("hola")
-
-    def crear_grupo(self):    #Debera ingresar la cantidad de registros correspondientes en base a los usuarios asignados al grupo en cuestion
-        print("hola")
-
-    def crear_grupo(self):    #Debera ingresar la cantidad de registros correspondientes en base a los usuarios asignados al grupo en cuestion
-        print("hola")
-
-    def crear_grupo(self):    #Debera ingresar la cantidad de registros correspondientes en base a los usuarios asignados al grupo en cuestion
-        print("hola")
-
-    def crear_grupo(self):    #Debera ingresar la cantidad de registros correspondientes en base a los usuarios asignados al grupo en cuestion
-        print("hola")
-
-class Interfaz:
-    def __init__(self):
-        self.boton_iniciar_se 
-
-class Proyecto(Interfaz):
-    def __init__(self, id, nombre, desc):
-        self.id = id
-        self.nombre = nombre
-        self.desc = desc
-
-    def get_id(self):
-        return self.id
-
-    def set_id(self, id):
-        self.id = id
-
-    def get_nombre(self):
-        return self.nombre
-
-    def set_nombre(self, nombre):
-        self.nombre = nombre
-
-    def get_desc(self):
-        return self.desc
-
-    def set_desc(self, desc):
-        self.desc = desc
-
-
-
-class Evento(Interfaz):
-    def __init__(self, id, nombre, desc):
-        self.id = id
-        self.nombre = nombre
-        self.desc = desc
-
-    def get_id(self):
-        return self.id
-
-    def set_id(self, id):
-        self.id = id
-
-    def get_nombre(self):
-        return self.nombre
-
-    def set_nombre(self, nombre):
-        self.nombre = nombre
-
-    def get_desc(self):
-        return self.desc
-
-    def set_desc(self, desc):
-        self.desc = desc
-
-
-
-class Buscador_proyectos(Interfaz):
-    def __init__(self, permiso, id_usuario):
-        self.hola = "holaaa"
-        self.ventana = TK.Toplevel(ventana)
-        self.encabezado = TK.Label(self.ventana, text="Proyectos")
-        self.contenedor_lista = TK.Frame(self.ventana, borderwidth=3, relief="solid", bg="light blue")
-        self.contenedor_lista.configure(height=10, width=10)
-        self.contenedor_lista.grid(row=1, column=0, sticky="nsew")
-        self.contenedor_lista.grid_rowconfigure(1, weight=1)
-        self.contenedor_lista.grid_columnconfigure(0, weight=1)
-        # self.contenedor_lista.grid_propagate(False)
-        self.lienzo_buscador = TK.Canvas(self.contenedor_lista)
-        self.barra_deslizadora = TK.Scrollbar(self.contenedor_lista, orient="vertical", command=self.lienzo_buscador.yview)
-        self.lienzo_buscador.configure(yscrollcommand=self.barra_deslizadora.set)
-        self.lienzo_buscador.grid(row=0, column=0, sticky="nswe")
-        self.barra_deslizadora.grid(row=0, column=1, sticky="ns")
-        self.lista_proyectos = TK.Frame(self.lienzo_buscador)
-
-        proyectos = consultaSelect("SELECT `id`, `nombre`, `descripcion`, `tema` FROM `proyectos`", ())
-
-
-        self.etiquetas_proyectos = []
-        self.botones_acceso = []
-        self.botones_solicitud = []
-
-        for i in range(len(proyectos)):
-            self.etiquetas_proyectos.append(
-                TK.Label(self.lista_proyectos, text=proyectos[i][1])
-            )
-            self.botones_acceso.append(
-                TK.Button(self.lista_proyectos, text=proyectos[i][0], command=lambda: self.ventanaPresentacion(1, permiso))
-            )
-            self.botones_solicitud.append(
-                TK.Button(self.lista_proyectos, text="Solicitar", command= lambda: self.ventanaFormulario(2, 3, False))
-                        #   self.ventanaFormulario(i[0], id_usuario, False))
-            )
-
-        self.lista_proyectos.config(bg="lightgreen")
-        self.lienzo_buscador.create_window((0, 0), window=self.lista_proyectos, anchor="nw")
-        # self.lista_proyectos.bind("<Configure>", lambda e: self.lienzo_buscador.configure(scrollregion=self.lienzo_buscador.bbox("all")))
-        for i in range(len(self.etiquetas_proyectos)):
-            self.etiquetas_proyectos[i].grid(row=i, column=0, sticky="ew")
-            self.botones_acceso[i].grid(row=i, column=1)
-            self.botones_solicitud[i].grid(row=i, column=2)
-        self.lista_proyectos.update_idletasks()
-        self.lienzo_buscador.config(scrollregion=self.lienzo_buscador.bbox("all"))
-        self.encabezado.grid(row=0, column=0)
-    
-    def ventanaFormulario(self, id_proyecto, id_usuario, id_grupo):
-        aux = Formulario_solicitar(id_proyecto, id_usuario, id_grupo)
-
-    def ventanaPresentacion(self, id_proyecto):
-        aux = Presentacion(id_proyecto, self.permiso)
+        #Estilos botones 0066ff
+        boton_rechazar.setStyleSheet("""QPushButton{
+        background-color: #df1300;
+        }""")
+        boton_aceptar.setStyleSheet("""QPushButton{
+        background-color: #00ff1d;
+        }
+        QPushButton:hover{
+        background-color: #00bf16;
+        }""")
         
 
-
-
-class Formulario(Interfaz):
-    def __init__(self, id_proyecto, id_usuario):
-        self.ventana = 0
-        self.accion = ""
+class BuscadorProyectos(QW.QWidget):
+    # def __init__(self, /, parent = ..., f = ..., *, modal = ..., windowModality = ..., enabled = ..., geometry = ..., frameGeometry = ..., normalGeometry = ..., x = ..., y = ..., pos = ..., frameSize = ..., size = ..., width = ..., height = ..., rect = ..., childrenRect = ..., childrenRegion = ..., sizePolicy = ..., minimumSize = ..., maximumSize = ..., minimumWidth = ..., minimumHeight = ..., maximumWidth = ..., maximumHeight = ..., sizeIncrement = ..., baseSize = ..., palette = ..., font = ..., cursor = ..., mouseTracking = ..., tabletTracking = ..., isActiveWindow = ..., focusPolicy = ..., focus = ..., contextMenuPolicy = ..., updatesEnabled = ..., visible = ..., minimized = ..., maximized = ..., fullScreen = ..., sizeHint = ..., minimumSizeHint = ..., acceptDrops = ..., windowTitle = ..., windowIcon = ..., windowIconText = ..., windowOpacity = ..., windowModified = ..., toolTip = ..., toolTipDuration = ..., statusTip = ..., whatsThis = ..., accessibleName = ..., accessibleDescription = ..., accessibleIdentifier = ..., layoutDirection = ..., autoFillBackground = ..., styleSheet = ..., locale = ..., windowFilePath = ..., inputMethodHints = ...):
+    #     super().__init__(parent, f, modal=modal, windowModality=windowModality, enabled=enabled, geometry=geometry, frameGeometry=frameGeometry, normalGeometry=normalGeometry, x=x, y=y, pos=pos, frameSize=frameSize, size=size, width=width, height=height, rect=rect, childrenRect=childrenRect, childrenRegion=childrenRegion, sizePolicy=sizePolicy, minimumSize=minimumSize, maximumSize=maximumSize, minimumWidth=minimumWidth, minimumHeight=minimumHeight, maximumWidth=maximumWidth, maximumHeight=maximumHeight, sizeIncrement=sizeIncrement, baseSize=baseSize, palette=palette, font=font, cursor=cursor, mouseTracking=mouseTracking, tabletTracking=tabletTracking, isActiveWindow=isActiveWindow, focusPolicy=focusPolicy, focus=focus, contextMenuPolicy=contextMenuPolicy, updatesEnabled=updatesEnabled, visible=visible, minimized=minimized, maximized=maximized, fullScreen=fullScreen, sizeHint=sizeHint, minimumSizeHint=minimumSizeHint, acceptDrops=acceptDrops, windowTitle=windowTitle, windowIcon=windowIcon, windowIconText=windowIconText, windowOpacity=windowOpacity, windowModified=windowModified, toolTip=toolTip, toolTipDuration=toolTipDuration, statusTip=statusTip, whatsThis=whatsThis, accessibleName=accessibleName, accessibleDescription=accessibleDescription, accessibleIdentifier=accessibleIdentifier, layoutDirection=layoutDirection, autoFillBackground=autoFillBackground, styleSheet=styleSheet, locale=locale, windowFilePath=windowFilePath, inputMethodHints=inputMethodHints)
+    def __init__(self, sesion: dict):
+        super().__init__()
         
-        contenido = consultaSelectUnica("SELECT `id`, `nombre`, `descripcion`, `tema` FROM `proyectos` WHERE id = %s", (id_proyecto))
-
-        self.ventana = TK.Toplevel(ventana)
-        self.etiquetas = [
-            TK.Label(ventana, text="Correo electrónico"),
-            TK.Label(ventana, text="Contraseña")
+        #Datos
+        proyectos = [
+            ("Robot SUMO", "Electrónica"),
+            ("SONUS", "Electrónica"),
+            ("Mesa abatible", "Carpintería")
         ]
-        self.entradas = [
-            TK.Entry(ventana),
-            TK.Entry(ventana)
-        ]
-        self.boton =  TK.Button(ventana, command=self.accion)
-        usuarios = []
-        self.contenedor_lista = TK.Frame(self.ventana, borderwidth=3, relief="solid", bg="light blue")
-        self.contenedor_lista.configure(height=10, width=10)
-        self.contenedor_lista.grid(row=1, column=0, sticky="nsew")
-        self.contenedor_lista.grid_rowconfigure(1, weight=1)
-        self.contenedor_lista.grid_columnconfigure(0, weight=1)
-        self.lienzo_buscador = TK.Canvas(self.contenedor_lista)
-        self.barra_deslizadora = TK.Scrollbar(self.contenedor_lista, orient="vertical", command=self.lienzo_buscador.yview)
-        self.lienzo_buscador.configure(yscrollcommand=self.barra_deslizadora.set)
-        self.lienzo_buscador.grid(row=0, column=0, sticky="nswe")
-        self.barra_deslizadora.grid(row=0, column=1, sticky="ns")
-        self.lista_proyectos = TK.Frame(self.lienzo_buscador)
+
+        #Contenedor central
+        contenedor_lista = QW.QVBoxLayout(self)
+        # contenedor_solicitudes = QW.QVBoxLayout(self)
+
+        #Etiquetas
+        etiqueta_lista_proyectos = QW.QLabel("Proyectos disponibles")
+        etiqueta_solicitudes = QW.QLabel("Grupos solicitantes")
+
+        #Botones
+        boton_abrir_grupos_proyecto = QW.QPushButton("¿Quiénes participaron?")
+
+        #Acciones de los botones
+        boton_abrir_grupos_proyecto.clicked.connect(lambda: self.abrirGruposProyecto())
+
+        #Lista de proyectos
+        self.tabla_proyectos = QW.QTableWidget(len(proyectos), 2)
+        self.tabla_proyectos.setHorizontalHeaderLabels(["Proyectos", "Tema"])
+        self.tabla_proyectos.setSelectionBehavior(QW.QTableWidget.SelectRows)
+        self.tabla_proyectos.setSelectionMode(QW.QTableWidget.SingleSelection)
+
+        #Agregar contenido a la tabla
+        for fila, (nombre, tema) in enumerate(proyectos):
+            self.tabla_proyectos.setItem(fila, 0, QW.QTableWidgetItem(nombre))
+            self.tabla_proyectos.setItem(fila, 1, QW.QTableWidgetItem(tema))
+
+        #Agregar elementos al contenedor
+        contenedor_lista.addWidget(etiqueta_lista_proyectos)
+        contenedor_lista.addWidget(self.tabla_proyectos)
+        contenedor_lista.addWidget(boton_abrir_grupos_proyecto)
+
+        self.show()
 
 
+    def abrirGruposProyecto(self):
+        fila = self.tabla_proyectos.currentRow()
+        if fila >= 0:
+            print(self.tabla_proyectos.item(fila, 0).text())
 
-        self.lista_proyectos.config(bg="lightgreen")
-        self.lienzo_buscador.create_window((0, 0), window=self.lista_proyectos, anchor="nw")
-        self.lista_proyectos.update_idletasks()
-        self.lienzo_buscador.config(scrollregion=self.lienzo_buscador.bbox("all"))
-
-    def get_id(self):
-        return self.id
-
-    def set_id(self, id):
-        self.id = id
-
-    def get_nombre(self):
-        return self.nombre
-
-    def set_nombre(self, nombre):
-        self.nombre = nombre
-
-    def get_desc(self):
-        return self.desc
-
-    def set_desc(self, desc):
-        self.desc = desc
-
-
-    def abrir_ventana(self):
-        for i in range(len(self.etiquetas)):
-            self.etiquetas[i].grid(row=i, column=0)
-            self.entradas[i].grid(row=i, column=1)
-        self.boton.grid(row=len(self.etiquetas), column=1, columnspan=2)
-
-
-
-class Formulario_solicitar(Interfaz):
-    def __init__(self, id_proyecto, id_usuario, id_grupo):
-        if id_grupo == False:
-            consultaInsert("INSERT INTO `grupos`() VALUES ()", ())
-            self.id_grupo = consultaSelectUnica("SELECT MAX(`id`) FROM `grupos`", ())[0]
-            consultaInsert("INSERT INTO `usuarios_grupos`(`id_grupo`, `id_usuario`, `rol`) VALUES (%s,%s,%s)", (self.id_grupo, id_usuario, "lider"))
-        else:
-            self.id_grupo = id_grupo
-        usuarios = consultaSelect("SELECT u.`id`, u.`nombre`, u.`contra`, u.`email`, u.`permisos`, EXISTS(SELECT 1 FROM usuarios_grupos ug WHERE u.id = ug.id_usuario AND ug.id_grupo = %s) AS yaEnGrupo FROM `usuarios` u", tuple([self.id_grupo]))
+class GruposProyecto(QW.QWidget):
+    def __init__(self, nombre_proyecto):
+        super().__init__()
+        self.resize(500, 300)
         
-        self.ventana = TK.Toplevel(ventana)
+        #Datos
+        proyectos = [
+            (1, "Robot SUMO", True, "robot_sumo.jpeg"),
+            (2, "SONUS", True, "proyecto_por_defecto.jpg"),
+            (3, "Mesa abatible", True, "robot_sumo.jpeg")
+        ]
+
+        #Instancias de los grupos del proyecto
+        grupos_proyecto = []
+
+        #Contenedores
+        contenedor_central = QW.QVBoxLayout(self)
+
+        #Área de scroll de los grupos
+        area_scroll_grupos = QW.QScrollArea()
+        area_scroll_grupos.setWidgetResizable(True)
+
+        #Ventana del área scrolleable
+        ventana_area_scroll_grupos = QW.QWidget()
+
+        #Contenedor grupos
+        contenedor_grupos = QW.QVBoxLayout(ventana_area_scroll_grupos)
+
+        #Ingreso de datos en la lista de instancias
+        for i in proyectos:
+            grupos_proyecto.append(GrupoDeProyecto(i[0], i[1], i[2], i[3]))
+            contenedor_grupos.addLayout(grupos_proyecto[-1])
+
+        #Mostrar elementos
+        area_scroll_grupos.setWidget(ventana_area_scroll_grupos)
+        contenedor_central.addWidget(area_scroll_grupos)
+
+        self.show()
+
+
+    def abrirGruposProyecto(self, tabla_proyectos):
+        fila = tabla_proyectos.currentRow()
+        if fila >= 0:
+            print(tabla_proyectos.item(fila, 0).text())
+
+class GrupoDeProyecto(QW.QVBoxLayout):
+    def __init__(self, id, nombre, miembro, imagen):
+        super().__init__()
         
-        self.usuarios = []
-        self.contenedor_lista = TK.Frame(self.ventana, borderwidth=3, relief="solid", bg="light blue")
-        self.contenedor_lista.configure(height=10, width=10)
-        self.contenedor_lista.grid(row=1, column=0, sticky="nsew")
-        self.contenedor_lista.grid_rowconfigure(1, weight=1)
-        self.contenedor_lista.grid_columnconfigure(0, weight=1)
-        self.lienzo_buscador = TK.Canvas(self.contenedor_lista)
-        self.barra_deslizadora = TK.Scrollbar(self.contenedor_lista, orient="vertical", command=self.lienzo_buscador.yview)
-        self.lienzo_buscador.configure(yscrollcommand=self.barra_deslizadora.set)
-        self.lienzo_buscador.grid(row=0, column=0, sticky="nswe")
-        self.barra_deslizadora.grid(row=0, column=1, sticky="ns")
-        self.lista_usuarios = TK.Frame(self.lienzo_buscador)
+        #Contenedores
+        contenedor_botones = QW.QHBoxLayout()
 
-        for i in usuarios:
-            self.usuarios.append((
-                TK.Label(self.lista_usuarios, text=i[1]),
-                TK.Button(self.lista_usuarios, text="Agregar", command=lambda: self.agregarUsuario(i[0])),
-                TK.Button(self.lista_usuarios, text="Eliminar", command=lambda: self.eliminarUsuario(i[0]))
-            ))
-            self.usuarios[-1][0].grid(row=len(self.usuarios), column=0)
-            self.usuarios[-1][1].grid(row=len(self.usuarios), column=1)
-            self.usuarios[-1][2].grid(row=len(self.usuarios), column=2)
+        #Etiquetas
+        etiqueta_nombre = QW.QLabel(nombre)
 
-        self.lista_usuarios.config(bg="lightgreen")
-        self.lienzo_buscador.create_window((0, 0), window=self.lista_usuarios, anchor="nw")
-        self.lista_usuarios.update_idletasks()
-        self.lienzo_buscador.config(scrollregion=self.lienzo_buscador.bbox("all"))
+        #Imágenes
+        imagen_proyecto = QW.QLabel()
+        imagen_proyecto.resize(50, 170)
+        imagen_proyecto.setScaledContents(True)
+        mapa_pixeles_imagen_proyecto = QG.QPixmap("./img/" + imagen)
+        escalado_mapa_pixeles_imagen_proyecto = mapa_pixeles_imagen_proyecto.scaled(imagen_proyecto.size(), Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation)
+        imagen_proyecto.setPixmap(escalado_mapa_pixeles_imagen_proyecto)
 
-    def get_id(self):
-        return self.id
+        #Botones
+        boton_ver_proyecto = QW.QPushButton("Ver más")
+        boton_administrar_proyecto = QW.QPushButton("Administrar")
 
-    def set_id(self, id):
-        self.id = id
+        #Acciones de botones
+        boton_ver_proyecto.clicked.connect(lambda: self.abrirProyecto(id))
+        boton_administrar_proyecto.clicked.connect(lambda: self.abrirAdministradorProyectos(id))
 
-    def get_nombre(self):
-        return self.nombre
+        #Llenar layout de botones
+        contenedor_botones.addWidget(boton_ver_proyecto)
+        if miembro == True:
+            contenedor_botones.addWidget(boton_administrar_proyecto)
 
-    def set_nombre(self, nombre):
-        self.nombre = nombre
+        #Llenar contenedor general
+        self.addWidget(etiqueta_nombre)
+        self.addWidget(imagen_proyecto)
+        self.addLayout(contenedor_botones)
 
-    def get_desc(self):
-        return self.desc
+    def abrirProyecto(self, id_grupo):
+        print("Abrir proyecto " + str(id_grupo))
 
-    def set_desc(self, desc):
-        self.desc = desc
+    def abrirAdministradorProyectos(self, id_grupo):
+        print("Abrir el administrador de proyectos " + str(id_grupo))
 
+class FormularioRegistro(QW.QWidget):
+    def __init__(self, sesion: dict):
+        super().__init__()
 
-    def agregarUsuario(self, id_usuario):
-        consultaInsert("INSERT INTO `usuarios_grupos`(`id_grupo`, `id_usuario`) VALUES (%s, %s)", (self.id_grupo, id_usuario))
-
-    def eliminarUsuario(self, id_usuario):
-        consultaInsert("UPDATE `usuarios_grupos` SET `estado`='expulsado' WHERE id_usuario = %s", (id_usuario))
-
-
-
-class Inicio_se(Formulario):
-    def __init__(self, accion):
-        self.ventana = TK.Toplevel(ventana)
-        self.colores = ""
-        self.accion = accion
-        self.etiquetas = [
-            TK.Label(self.ventana, text="Correo electrónico"),
-            TK.Label(self.ventana, text="Contraseña")
-        ]
-        self.entradas = [
-            TK.Entry(self.ventana),
-            TK.Entry(self.ventana)
-        ]
-        self.boton =  TK.Button(self.ventana, command=lambda: self.accion(self.entradas[0].get(), self.entradas[1].get()))
-
-        self.abrir_ventana()
-
-
-
-class Resgistro(Formulario):
-    def __init__(self, accion):
-        self.ventana = TK.Toplevel(ventana)
-        self.colores = ""
-        self.accion = accion
-        self.etiquetas = [
-            TK.Label(self.ventana, text="Nombre"),
-            TK.Label(self.ventana, text="Correo electrónico"),
-            TK.Label(self.ventana, text="Contraseña")
-        ]
-        self.entradas = [
-            TK.Entry(self.ventana),
-            TK.Entry(self.ventana),
-            TK.Entry(self.ventana)
-        ]
-        self.boton =  TK.Button(self.ventana, command=lambda: self.accion(self.entradas[0].get(), self.entradas[1].get(), self.entradas[2].get()))
-
-        self.abrir_ventana()
-
-
-
-class Crear_proyecto(Formulario):
-    def __init__(self, accion):
-        print("hola")
-        self.ventana = TK.Toplevel(ventana)
-        print("hola")
-        self.colores = ""
-        self.etiquetas = [
-            TK.Label(self.ventana, text="Nombre proyecto"),
-            TK.Label(self.ventana, text="Descripcion proyecto")
-        ]
-        self.entradas = [
-            TK.Entry(self.ventana),
-            TK.Entry(self.ventana)
-        ]
-        self.boton =  TK.Button(self.ventana, command=lambda: accion(self.entradas[0].get(), self.entradas[1].get()))
-
-        self.etiquetas[0].grid(row=0, column=0)
-        self.etiquetas[1].grid(row=1, column=0)
-        self.entradas[0].grid(row=2, column=0)
-        self.entradas[1].grid(row=3, column=0)
-        self.boton.grid(row=4, column=0)
+        self.setWindowTitle("Inicio de Sesión")
+        self.sesion = sesion
         
+        #contenedor_central
+        contenedor_central = QW.QVBoxLayout(self)
+        contenedor_formulario = QW.QFormLayout()
 
+        #Título del formulario
+        etiqueta_titulo_formulario = QW.QLabel("Registro de usuario")
+        etiqueta_titulo_formulario.setAlignment(Qt.AlignCenter)
+        etiqueta_titulo_formulario.setStyleSheet(
+            "font-size: 20px;" \
+            "text-align: center;" \
+            "background-color: #999;"
+        )
 
-class Presentacion(Interfaz):
-    def __init__(self, id_presentacion, permiso):
-        self.id = id_presentacion
-        # imagen = ""
-        # self.imagen = TK.PhotoImage(file= "../img/" + imagen)
-        # self.etiqueta_imagen = TK.Label(image=self.imagen)
-        encabezado = ""
-        contenido = []
+        #Entradas de datos
+        self.entrada_nombre = QW.QLineEdit()
+        self.entrada_email = QW.QLineEdit()
+        self.entrada_contra = QW.QLineEdit()
+        self.entrada_contra.setEchoMode(QW.QLineEdit.Password)
 
-        titulo = consultaSelectUnica("SELECT `id`, `encabezado`, `fecha_comienzo`, `fecha_finalizacion`, `definicion`, `proposito` FROM `presentaciones` WHERE id = %s", (id_presentacion))
-        etapas = consultaSelect("SELECT * FROM `presentaciones` WHERE id_solicitud = %s AND tipo = 'etapa' ORDER BY id DESC", (id_presentacion))
-        contenido = consultaSelect("SELECT `id`, `subtitulo`, `contenido` FROM `contenido` WHERE id_presentacion = %s", (id_presentacion))
+        #Botón
+        boton_enviar_formulario = QW.QPushButton("¡Registrarme!")
+        boton_enviar_formulario.clicked.connect(lambda: self.enviarFormulario(self.sesion))
 
-        self.ventana = TK.Toplevel(ventana)
-        self.botones_etapas = []
-        self.cuerpo = []
-        self.contenido_cuerpo = []
-        for i in range(len(etapas)):
-            self.botones_etapas.append(TK.Button(self.ventana, text=etapas[i]["encabezado"], command= lambda: self.abrir_etapa(self.etapas[i]["id"])))
-        self.encabezado = TK.Label(self.ventana, text=titulo[0])
-        self.contenido = []
-        for i in range(len(contenido)):
-            self.contenido_cuerpo.append(
-                TK.Frame(self.ventana)
-            )
-            self.cuerpo.append((
-                TK.Label(self.contenido_cuerpo[-1], text=contenido[i]["subtitulo"]),
-                TK.Label(self.contenido_cuerpo[-1], text=contenido[i]["contenido"])
-            ))
-            self.contenido_cuerpo[-1].grid(row=i, column=0)
-            self.cuerpo[-1][0].grid(row=0, column=1)
-            self.cuerpo[-1][1].grid(row=1, column=1)
+        #Mostrar Las columnas y filas
+        contenedor_central.addWidget(etiqueta_titulo_formulario)
+        contenedor_central.addLayout(contenedor_formulario)
+        contenedor_formulario.addRow("Nombre: ", self.entrada_nombre)
+        contenedor_formulario.addRow("Correo electrónico: ", self.entrada_email)
+        contenedor_formulario.addRow("Contraseña: ", self.entrada_contra)
+        contenedor_central.addWidget(boton_enviar_formulario)
 
+        self.show()
 
-    def get_id(self):
-        return self.id
+    def enviarFormulario(self, sesion):
+        print(self.entrada_contra.text())
 
-    def set_id(self, id_presentacion):
-        self.id = id_presentacion
+class FormularioInicioSesion(QW.QWidget):
+    def __init__(self, sesion: dict):
+        super().__init__()
 
-    def get_nombre(self):
-        return self.nombre
-
-    def set_nombre(self, nombre):
-        self.nombre = nombre
-
-    def get_email(self):
-        return self.email
-
-    def set_email(self, email):
-        self.email = email
-
-    def abrir_ventana(self):
-        self.encabezado.grid(row=0, column=0)
-        for i in range(len(self.contenido)):
-            self.contenido[i].grid(row=i+2, column=0)
-
-    def abrir_etapa(self, id_presentacion):
-        self.nueva_etapa = Etapa(id)
-
-
-class Etapa(Interfaz):
-    def __init__(self, id):
-        self.ventana = TK.Toplevel(ventana)
-        self.id_etapas = []
-        self.nombre_etapas = []
-        self.id = id
-        encabezado = ""
-        contenido = []
-        self.encabezado = TK.Label(self.ventana, text=encabezado)
-        self.contenido = []
-        for i in contenido:
-            self.contenido.append(TK.Label(self.ventana, text=i))
+        self.setWindowTitle("Inicio de Sesión")
         
-        self.abrir_ventana()
+        #contenedor_central
+        contenedor_central = QW.QVBoxLayout(self)
+        contenedor_formulario = QW.QFormLayout()
 
-    def get_id(self):
-        return self.id
+        #Título del formulario
+        etiqueta_titulo_formulario = QW.QLabel("Registro de usuario")
+        etiqueta_titulo_formulario.setAlignment(Qt.AlignCenter)
+        etiqueta_titulo_formulario.setStyleSheet(
+            "font-size: 20px;" \
+            "text-align: center;" \
+            "background-color: #999;"
+        )
 
-    def set_id(self, id):
-        self.id = id
+        #Entradas de datos
+        self.entrada_email = QW.QLineEdit()
+        self.entrada_contra = QW.QLineEdit()
+        self.entrada_contra.setEchoMode(QW.QLineEdit.Password)
 
-    def get_nombre(self):
-        return self.nombre
+        #Botón
+        boton_enviar_formulario = QW.QPushButton("¡Registrarme!")
+        boton_enviar_formulario.clicked.connect(lambda: self.enviarFormulario(self.sesion))
 
-    def set_nombre(self, nombre):
-        self.nombre = nombre
+        #Mostrar Las columnas y filas
+        contenedor_central.addWidget(etiqueta_titulo_formulario)
+        contenedor_central.addLayout(contenedor_formulario)
+        contenedor_formulario.addRow("Correo electrónico: ", self.entrada_email)
+        contenedor_formulario.addRow("Contraseña: ", self.entrada_contra)
+        contenedor_central.addWidget(boton_enviar_formulario)
 
-    def get_email(self):
-        return self.email
+        self.show()
 
-    def set_email(self, email):
-        self.email = email
+    def enviarFormulario(self, sesion):
+        print("Hola")
 
-    def abrir_ventana(self):
-        self.encabezado.grid(row=0, column=0)
-        for i in range(len(self.contenido)):
-            self.contenido[i].grid(row=i+1, column=0)
+class FormularioCreacionProyecto(QW.QWidget):
+    def __init__(self, sesion: dict):
+        super().__init__()
+
+        self.setWindowTitle("Inicio de Sesión")
+        
+        #contenedor_central
+        contenedor_central = QW.QVBoxLayout(self)
+        contenedor_formulario = QW.QFormLayout()
+
+        #Título del formulario
+        etiqueta_titulo_formulario = QW.QLabel("Registro de usuario")
+        etiqueta_titulo_formulario.setAlignment(Qt.AlignCenter)
+        etiqueta_titulo_formulario.setStyleSheet(
+            "font-size: 20px;" \
+            "text-align: center;" \
+            "background-color: #999;"
+        )
+
+        #Entradas de datos
+        self.entrada_nombre = QW.QLineEdit()
+        self.entrada_email = QW.QLineEdit()
+        self.entrada_contra = QW.QLineEdit()
+        self.entrada_contra.setEchoMode(QW.QLineEdit.Password)
+
+        #Botón
+        boton_enviar_formulario = QW.QPushButton("¡Registrarme!")
+        boton_enviar_formulario.clicked.connect(lambda: self.enviarFormulario(self.sesion))
+
+        #Mostrar Las columnas y filas
+        contenedor_central.addWidget(etiqueta_titulo_formulario)
+        contenedor_central.addLayout(contenedor_formulario)
+        contenedor_formulario.addRow("Nombre: ", self.entrada_nombre)
+        contenedor_formulario.addRow("Correo electrónico: ", self.entrada_email)
+        contenedor_formulario.addRow("Contraseña: ", self.entrada_contra)
+        contenedor_central.addWidget(boton_enviar_formulario)
+
+        self.show()
+
+    def enviarFormulario(self, sesion):
+        print("Hola")
+
+class PanelAdministradorGrupos(QW.QWidget):
+    def __init__(self, sesion: dict):
+        super().__init__()
+
+        #Datos
+        self.sesion = sesion
+        miembros = (
+            (1, "Bruno Fornasar", "activo"),
+            (2, "Pepito lol", "activo"),
+            (3, "Ferrusio xd", "pendiente"),
+            (4, "Jorgito jaja", "pendiente"),
+            (5, "Camil gol", "rechazado")
+        )
+
+        no_miembros = (
+            (1, "Bruno Fornasar"),
+            (2, "Pepito lol"),
+            (3, "Ferrusio xd"),
+            (4, "Jorgito jaja"),
+            (5, "Camil gol")
+        )
+        
+        #Contenedores
+        contenedor_general = QW.QHBoxLayout(self)
+        contenedor_tabla_miembros = QW.QVBoxLayout()
+        contenedor_tabla_no_miembros = QW.QVBoxLayout()
+
+        #Botones
 
 
+        #Tablas
+        self.tabla_miembros = QW.QTableWidget(len(miembros), 3)
+        self.tabla_no_miembros = QW.QTableWidget(len(no_miembros), 2)
 
-class Perfil(Interfaz):
-    def __init__(self, id_usuario, permiso, nombre, email):
-        print(type((id_usuario)))
-        invitaciones = consultaSelect("SELECT `id`, `id_grupo`, `id_usuario`, `rol`, `estado` FROM `usuarios_grupos` WHERE id_usuario = %s AND estado = 'pendiente'", tuple([id_usuario]))
+        #Configurar las cabeceras de las tablas
+        self.tabla_miembros.setHorizontalHeaderLabels(["ID", "Nombre", "Estado"])
+        self.tabla_no_miembros.setHorizontalHeaderLabels(["ID", "Nombre"])
 
-        self.ventana = TK.Toplevel(ventana)
-        self.etiqueta_perfil = TK.Label(self.ventana, text="Perfil")
-        self.contenedor_datos = TK.Frame(self.ventana)
-        self.etiqueta_nombre = [
-            TK.Label(self.contenedor_datos, text="Nombre: "),
-            TK.Label(self.contenedor_datos, text=nombre)
-            ]
-        self.etiqueta_id = [
-            TK.Label(self.contenedor_datos, text="ID: "),
-            TK.Label(self.contenedor_datos, text=id_usuario)
-            ]
-        self.etiqueta_email = [
-            TK.Label(self.contenedor_datos, text="Email: "),
-            TK.Label(self.contenedor_datos, text=email)
-        ]
-        self.etiqueta_permiso = [
-            TK.Label(self.contenedor_datos, text="Permisos: "),
-            TK.Label(self.contenedor_datos, text=permiso)
-        ]
+        #Configurar modo de selección de las tablas para que solo se pueda seleccionar una fila a la vez
+        self.tabla_miembros.setSelectionBehavior(QW.QTableWidget.SelectRows)
+        self.tabla_miembros.setSelectionMode(QW.QTableWidget.SingleSelection)
+        self.tabla_no_miembros.setSelectionBehavior(QW.QTableWidget.SelectRows)
+        self.tabla_no_miembros.setSelectionMode(QW.QTableWidget.SingleSelection)
 
-        self.etiqueta_perfil.grid(row=0, column=0, sticky="ew")
-        for i in range(2):
-            self.etiqueta_id[i].grid(row=0, column=i)
-            self.etiqueta_nombre[i].grid(row=1, column=i)
-            self.etiqueta_email[i].grid(row=2, column=i)
-            self.etiqueta_permiso[i].grid(row=3, column=i)
-        self.contenedor_datos.grid(row=1, column=0)
+        #Llenar las tablas
+        for fila, (identificador, nombre, estado) in enumerate(miembros):
+            self.tabla_miembros.setItem(fila, 0, QW.QTableWidgetItem(str(identificador)))
+            self.tabla_miembros.setItem(fila, 1, QW.QTableWidgetItem(nombre))
+            self.tabla_miembros.setItem(fila, 2, QW.QTableWidgetItem(estado))
+            self.tabla_miembros.item(fila, 0).setTextAlignment(Qt.AlignCenter)
+        for fila, (identificador, nombre) in enumerate(no_miembros):
+            self.tabla_no_miembros.setItem(fila, 0, QW.QTableWidgetItem(str(identificador)))
+            self.tabla_no_miembros.setItem(fila, 1, QW.QTableWidgetItem(nombre))
+            self.tabla_no_miembros.item(fila, 0).setTextAlignment(Qt.AlignCenter)
 
-        self.etiqueta_solicitudes = TK.Label(self.ventana, text="Solicitudes")
+        #Estilos de la tabla
+        # self.tabla_miembros.item(fila, 0).setS
 
-        self.solicitudes = []
+        #Mostrar elementos
+        contenedor_general.addLayout(contenedor_tabla_miembros, 6)
+        contenedor_general.addLayout(contenedor_tabla_no_miembros, 4)
+        contenedor_tabla_miembros.addWidget(self.tabla_miembros)
+        contenedor_tabla_no_miembros.addWidget(self.tabla_no_miembros)
 
-        self.contenedor_solicitudes = TK.Frame(self.ventana, borderwidth=3, relief="solid", bg="light blue")
-        self.contenedor_solicitudes.configure(height=10, width=10)
-        self.contenedor_solicitudes.grid_rowconfigure(1, weight=1)
-        self.contenedor_solicitudes.grid_columnconfigure(0, weight=1)
-        self.lienzo_solicitudes = TK.Canvas(self.contenedor_solicitudes)
-        self.barra_deslizadora_solicitudes = TK.Scrollbar(self.contenedor_solicitudes, orient="vertical", command=self.lienzo_solicitudes.yview)
-        self.lienzo_solicitudes.configure(yscrollcommand=self.barra_deslizadora_solicitudes.set)
-        self.lienzo_solicitudes.grid(row=0, column=0, sticky="nswe")
-        self.barra_deslizadora_solicitudes.grid(row=0, column=1, sticky="ns")
-        self.lista_solicitudes = TK.Frame(self.lienzo_solicitudes)
-
-
-
-        self.lista_solicitudes.config(bg="lightgreen")
-        self.lienzo_solicitudes.create_window((0, 0), window=self.lista_solicitudes, anchor="nw")
-        self.lista_solicitudes.update_idletasks()
-        self.lienzo_solicitudes.config(scrollregion=self.lienzo_solicitudes.bbox("all"))
-
-
-        self.invitaciones = []
-
-        self.contenedor_invitaciones = TK.Frame(self.ventana, borderwidth=3, relief="solid", bg="light blue")
-        self.contenedor_invitaciones.configure(height=10, width=10)
-        self.contenedor_invitaciones.grid_rowconfigure(1, weight=1)
-        self.contenedor_invitaciones.grid_columnconfigure(0, weight=1)
-        self.lienzo_invitaciones = TK.Canvas(self.contenedor_invitaciones)
-        self.barra_deslizadora_invitaciones = TK.Scrollbar(self.contenedor_invitaciones, orient="vertical", command=self.lienzo_invitaciones.yview)
-        self.lienzo_invitaciones.configure(yscrollcommand=self.barra_deslizadora_invitaciones.set)
-        self.lienzo_invitaciones.grid(row=0, column=0, sticky="nswe")
-        self.barra_deslizadora_invitaciones.grid(row=0, column=1, sticky="ns")
-        self.lista_invitaciones = TK.Frame(self.lienzo_invitaciones)
-
-        for i in invitaciones:
-            self.invitaciones.append((
-                TK.Label(self.lista_invitaciones, text=i[0]),
-                TK.Button(self.lista_invitaciones, text="Aceptar"),
-                TK.Button(self.lista_invitaciones, text="Rechazar")
-            ))
-            self.invitaciones[-1][0].grid(row=len(self.invitaciones), column=0)
-            self.invitaciones[-1][1].grid(row=len(self.invitaciones), column=0)
-            self.invitaciones[-1][2].grid(row=len(self.invitaciones), column=0)
-        self.contenedor_invitaciones.grid(row=2, column=0)
-            
-
-        self.lista_invitaciones.config(bg="lightgreen")
-        self.lienzo_invitaciones.create_window((0, 0), window=self.lista_invitaciones, anchor="nw")
-        self.lista_invitaciones.update_idletasks()
-        self.lienzo_invitaciones.config(scrollregion=self.lienzo_invitaciones.bbox("all"))
+        self.show()
