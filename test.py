@@ -1,34 +1,35 @@
-from PySide6.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QLabel, QScrollArea, QPushButton
-)
-from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QApplication, QWidget, QLabel, QGraphicsOpacityEffect, QVBoxLayout
+from PySide6.QtCore import QPropertyAnimation, QEasingCurve
 
 app = QApplication([])
 
-# Ventana principal
-ventana = QWidget()
-layout_principal = QVBoxLayout(ventana)
+# Crear un widget simple (una ventana con texto)
+widget = QWidget()
+widget.setWindowTitle("Animación de Opacidad")
+widget.setFixedSize(300, 200)
 
-# ScrollArea que contendrá otros widgets
-scroll_area = QScrollArea()
-scroll_area.setWidgetResizable(True)  # Importante para que el contenido se adapte
+contenedor = QVBoxLayout(widget)
 
-# Contenedor interno con layout vertical
-contenedor_scroll = QWidget()
-layout_scroll = QVBoxLayout(contenedor_scroll)
+label = QLabel("Hola, soy un widget animado!")
+label.move(50, 80)
 
-# Agregamos muchos widgets para que se genere scroll
-for i in range(30):
-    etiqueta = QLabel(f"Elemento #{i+1}")
-    etiqueta.setFixedHeight(40)
-    etiqueta.setStyleSheet("background-color: lightgray; border: 1px solid black;")
-    layout_scroll.addWidget(etiqueta)
 
-scroll_area.setWidget(contenedor_scroll)
 
-# Agregamos el scroll al layout principal
-layout_principal.addWidget(scroll_area)
+# Aplicar un efecto de opacidad al widget
+opacity_effect = QGraphicsOpacityEffect(contenedor)
+contenedor.setGraphicsEffect(opacity_effect)
 
-ventana.resize(300, 400)
-ventana.show()
+# Crear una animación para la propiedad 'opacity' del efecto
+animation = QPropertyAnimation(opacity_effect, b"opacity")
+animation.setDuration(100)           # 1 segundo
+animation.setStartValue(0.0)          # Comienza totalmente transparente
+animation.setEndValue(1.0)            # Termina totalmente visible
+animation.setEasingCurve(QEasingCurve.InOutQuad)
+
+# Mostrar el widget
+animation.start()
+widget.show()
+
+# Iniciar la animación justo después de mostrarlo
+
 app.exec()

@@ -557,107 +557,157 @@ class PanelAdministradorGrupos(QW.QWidget):
         self.show()
 
 class Presentacion(QW.QWidget):
-    def __init__(self, sesion):
+    def __init__(self, sesion, id):
         super().__init__()
 
-        editar = False
+        self.resize(800, 500)
+        self.setStyleSheet("background-color: #000d20;")
+        self.sesion = sesion
+        self.id = id
 
-        #Datos
-        datos = (1, "Robot SUMO", "imagen", "principal")
+        # Lista de presentaciones disponibles (ids)
+        self.presentaciones = [1, 2, 3]
 
-        #Datos de contenido de proyectos
+        # Datos simulados de la presentación actual
+        datos = (id, f"Presentación {id}", "imagen.jpg", "principal")
+        self.setWindowTitle(datos[1])
+
+        # Contenido de la presentación
         datos_contenido = [
-            (0, "Encabezado", "Descripcion", None, False),
-            (0, "Encabezado", "Descripcion", None, False),
-            (0, "Encabezado", "Descripcion", None, False)
+            (0, "Encabezado", "Descripcion", None),
+            (0, "Encabezado", "Descripcion", "robot_sumo.jpeg"),
+            (0, "Encabezado", "Descripcion", None)
         ]
 
-        #Instancias de los contenidos del proyecto
         self.contenidos = []
-        
-        #Imagen principal en caso de ser presentacion principal
-        if datos != None:
-            if datos[3] == "principal":
-                imagen_proyecto = QW.QLabel()
-                imagen_proyecto.resize(50, 170)
-                imagen_proyecto.setScaledContents(True)
-                mapa_pixeles_imagen_proyecto = QG.QPixmap("./img/" + datos[2])
-                imagen_proyecto.setPixmap(mapa_pixeles_imagen_proyecto)
 
-        #Opciones de edicion
-        if editar == True:
-            self.habilitar_edicion = QW.QCheckBox("Habilitar edicion")
+        # Layout principal horizontal (barra lateral + contenido)
+        layout_principal = QW.QVBoxLayout(self)
 
-        #Titulo
-        etiqueta = QW.QLabel(datos[1])
+        # Header de navegación
+        header = QW.QHBoxLayout()
+        boton_volver_buscador = QW.QPushButton("Volver a Buscador")
+        boton_volver_principal = QW.QPushButton("Volver al Inicio")
 
-        #Creacion de contenido
-        if datos_contenido == []:
-            for i in datos_contenido:
-                self.contenidos = ContenidoPresentacion(i[0], i[1], i[2], i[3], i[4])
+        estilo_boton = ("QPushButton {"
+                        "background-color: #004dbf;"
+                        "border-radius: 3px;"
+                        "color: #dfecff;"
+                        "padding: 5px 10px;"
+                        "}"
+                        "QPushButton:hover {"
+                        "background-color: #00409f;"
+                        "}")
 
-class ContenidoPresentacion(QW.QWidget):
-    def __init__(self, id, encabezado, desc, imagen, editar):
+        boton_volver_buscador.setStyleSheet(estilo_boton)
+        boton_volver_principal.setStyleSheet(estilo_boton)
+
+        boton_volver_buscador.clicked.connect(self.abrirBuscador)
+        boton_volver_principal.clicked.connect(self.abrirPrincipal)
+
+        header.addWidget(boton_volver_buscador)
+        header.addStretch()
+        header.addWidget(boton_volver_principal)
+
+        layout_principal.addLayout(header)
+
+        # Contenedor general horizontal
+        contenedor_general = QW.QHBoxLayout()
+
+        # Barra lateral
+        barra_lateral = QW.QVBoxLayout()
+
+        etiqueta_barra = QW.QLabel("Otras presentaciones")
+        etiqueta_barra.setStyleSheet("font-size: 18px; color: #dfecff;")
+        etiqueta_barra.setAlignment(Qt.AlignCenter)
+        barra_lateral.addWidget(etiqueta_barra)
+
+        for presentacion_id in self.presentaciones:
+            boton = QW.QPushButton(f"Presentación {presentacion_id}")
+            boton.setStyleSheet(estilo_boton)
+            boton.setMaximumHeight(40)
+            boton.setMinimumHeight(30)
+            boton.clicked.connect(lambda checked, pid=presentacion_id: self.abrirPresentacion(pid))
+            barra_lateral.addWidget(boton)
+            barra_lateral.setAlignment(Qt.AlignTop)
+
+        contenedor_general.addLayout(barra_lateral, 2)
+
+        # Contenedor de contenido principal
+        contenedor_contenido = QW.QVBoxLayout()
+
+        etiqueta_titulo = QW.QLabel(datos[1])
+        etiqueta_titulo.setStyleSheet("color: #dfecff; font-size: 50px;")
+        etiqueta_titulo.setAlignment(Qt.AlignCenter)
+        contenedor_contenido.addWidget(etiqueta_titulo)
+
+        # Área de scroll para contenidos
+        area_scroll = QW.QScrollArea()
+        area_scroll.setWidgetResizable(True)
+        widget_scroll = QW.QWidget()
+        layout_scroll = QW.QVBoxLayout(widget_scroll)
+        area_scroll.setWidget(widget_scroll)
+
+        for i in datos_contenido:
+            contenido = ContenidoPresentacion(i[0], i[1], i[2], i[3])
+            layout_scroll.addLayout(contenido)
+
+        contenedor_contenido.addWidget(area_scroll)
+        contenedor_general.addLayout(contenedor_contenido, 8)
+
+        layout_principal.addLayout(contenedor_general)
+
+        self.show()
+
+    def abrirBuscador(self):
+        self.close()
+        self.buscador = BuscadorProyectos(self.sesion)
+
+    def abrirPrincipal(self):
+        self.close()
+        self.principal = VentanaPrincipal()
+
+    def abrirPresentacion(self, id):
+        self.close()
+        self.nueva_presentacion = Presentacion(self.sesion, id)
+
+class ContenidoPresentacion(QW.QHBoxLayout):
+    def __init__(self, id, encabezado, desc, imagen):
         super().__init__()
-        self.resize(10, 20)
 
-        #Contenedores
-        contenedor_ventana = QW.QHBoxLayout(self)
-        contenedor_central = QW.QHBoxLayout()
         self.contenedor_contenido = QW.QVBoxLayout()
         contenedor_imagen = QW.QVBoxLayout()
 
-        #Contenedores estilos
         contenedor_estilos_contenido = QW.QFrame()
+        contenedor_estilos_imagen = QW.QFrame()
 
-        #Etiquetas
-        if editar == True:
-            self.etiqueta_encabezado = QW.QLineEdit(encabezado)
-            self.etiqueta_descripcion = QW.QTextEdit(desc)
-            self.etiqueta_descripcion.setReadOnly(True)
-        else:
-            self.etiqueta_encabezado = QW.QLabel(encabezado)
-            self.etiqueta_descripcion = QW.QLabel(desc)
-            
+        contenedor_estilos_contenido.setStyleSheet(
+            "background-color: #001a40; border-radius: 10px;"
+        )
+        contenedor_estilos_imagen.setStyleSheet(
+            "background-color: #001a40; border-radius: 10px;"
+        )
 
-        #Imagen
-        if imagen != None:
+        self.etiqueta_encabezado = QW.QLabel(encabezado)
+        self.etiqueta_encabezado.setStyleSheet("color: #dfecff; font-size: 20px;")
+        self.etiqueta_encabezado.setAlignment(Qt.AlignCenter)
+
+        self.etiqueta_descripcion = QW.QLabel(desc)
+        self.etiqueta_descripcion.setStyleSheet("color: #dfecff;")
+        self.etiqueta_descripcion.setAlignment(Qt.AlignCenter)
+
+        self.contenedor_contenido.addWidget(self.etiqueta_encabezado)
+        self.contenedor_contenido.addWidget(self.etiqueta_descripcion)
+        contenedor_estilos_contenido.setLayout(self.contenedor_contenido)
+        self.addWidget(contenedor_estilos_contenido)
+
+        if imagen is not None:
             imagen_complementaria = QW.QLabel()
             imagen_complementaria.resize(50, 50)
             imagen_complementaria.setScaledContents(True)
-            mapa_pixeles_imagen_complementaria = QG.QPixmap("./img/" + imagen)
-            imagen_complementaria.setPixmap(mapa_pixeles_imagen_complementaria)
-
-        #Opciones editor
-        # if editar == True:
-            #Botones
-            # boton_color_letra = QW.QPushButton("Cambiar color de la letra")
-            # boton_color_letra.clicked.connect(lambda: self.abrirSelectorColorLetra())
-            
-            #Colores
-            # self.color_letra = QW.QColorDialog()
-            # self.color_letra.currentColorChanged.connect(lambda: self.cambiarColorLetra())
-
-        #Agregar Widgets
-        self.contenedor_contenido.addWidget(self.etiqueta_encabezado)
-        self.contenedor_contenido.addWidget(self.etiqueta_descripcion)
-        # self.contenedor_contenido.addWidget(boton_color_letra)
-
-        #Agregar contenedores
-        contenedor_ventana.addWidget(contenedor_estilos_contenido)
-        contenedor_estilos_contenido.setLayout(contenedor_central)
-        contenedor_central.addLayout(self.contenedor_contenido)
-        contenedor_central.addLayout(contenedor_imagen)
-            
-        self.show()
-
-    def mostrarModoEdicion(self):
-        
-
-        self.color_letra.getColor(initial=QG.QColor(255, 0, 0), title="Color letra", options=QW.QColorDialog.ColorDialogOption.NoButtons)
-        print(self.color_letra.currentColor())
-
-    def cambiarColorLetra(self):
-        print("HOLAAAAA")
-        print(self.color_letra.currentColor())
-        # self.etiqueta_encabezado.setStyleSheet("color:")
+            pixmap = QG.QPixmap("./img/" + imagen)
+            pixmap_escalado = pixmap.scaled(imagen_complementaria.size(), Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation)
+            imagen_complementaria.setPixmap(pixmap_escalado)
+            contenedor_imagen.addWidget(imagen_complementaria)
+            contenedor_estilos_imagen.setLayout(contenedor_imagen)
+            self.addWidget(contenedor_estilos_imagen)
