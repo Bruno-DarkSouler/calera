@@ -147,6 +147,10 @@ class VentanaPrincipal(QW.QMainWindow):
                 self.contenedor_scroll_invitaciones.addWidget(invitacion)
         else:
             self.contenedor_scroll_invitaciones.addWidget(self.etiqueta_no_invitaciones)
+    
+    def ocultarInvitaciones(self):
+        for i in range(self.contenedor_scroll_invitaciones.count()):
+            self.contenedor_scroll_invitaciones.itemAt(i).widget().hide()
 
     def abrirBuscadorProyectos(self):
         buscador_proyectos = BuscadorProyectos(self.sesion)
@@ -168,6 +172,12 @@ class VentanaPrincipal(QW.QMainWindow):
         self.boton_cerrar_sesion.hide()
         self.boton_iniciar_sesion.show()
         self.boton_registrar_usuario.show()
+        self.ocultarInvitaciones()
+        self.sesion = {
+            "id": 0,
+            "nombre": "",
+            "permiso": "UE"
+        }
 
     def iniciarSesion(self, email, contra):
         self.sesion["nombre"]
@@ -217,7 +227,6 @@ class Invitaciones(QW.QFrame):
         background-color: #00bf16;
         }""")
         
-
 class BuscadorProyectos(QW.QWidget):
     # def __init__(self, /, parent = ..., f = ..., *, modal = ..., windowModality = ..., enabled = ..., geometry = ..., frameGeometry = ..., normalGeometry = ..., x = ..., y = ..., pos = ..., frameSize = ..., size = ..., width = ..., height = ..., rect = ..., childrenRect = ..., childrenRegion = ..., sizePolicy = ..., minimumSize = ..., maximumSize = ..., minimumWidth = ..., minimumHeight = ..., maximumWidth = ..., maximumHeight = ..., sizeIncrement = ..., baseSize = ..., palette = ..., font = ..., cursor = ..., mouseTracking = ..., tabletTracking = ..., isActiveWindow = ..., focusPolicy = ..., focus = ..., contextMenuPolicy = ..., updatesEnabled = ..., visible = ..., minimized = ..., maximized = ..., fullScreen = ..., sizeHint = ..., minimumSizeHint = ..., acceptDrops = ..., windowTitle = ..., windowIcon = ..., windowIconText = ..., windowOpacity = ..., windowModified = ..., toolTip = ..., toolTipDuration = ..., statusTip = ..., whatsThis = ..., accessibleName = ..., accessibleDescription = ..., accessibleIdentifier = ..., layoutDirection = ..., autoFillBackground = ..., styleSheet = ..., locale = ..., windowFilePath = ..., inputMethodHints = ...):
     #     super().__init__(parent, f, modal=modal, windowModality=windowModality, enabled=enabled, geometry=geometry, frameGeometry=frameGeometry, normalGeometry=normalGeometry, x=x, y=y, pos=pos, frameSize=frameSize, size=size, width=width, height=height, rect=rect, childrenRect=childrenRect, childrenRegion=childrenRegion, sizePolicy=sizePolicy, minimumSize=minimumSize, maximumSize=maximumSize, minimumWidth=minimumWidth, minimumHeight=minimumHeight, maximumWidth=maximumWidth, maximumHeight=maximumHeight, sizeIncrement=sizeIncrement, baseSize=baseSize, palette=palette, font=font, cursor=cursor, mouseTracking=mouseTracking, tabletTracking=tabletTracking, isActiveWindow=isActiveWindow, focusPolicy=focusPolicy, focus=focus, contextMenuPolicy=contextMenuPolicy, updatesEnabled=updatesEnabled, visible=visible, minimized=minimized, maximized=maximized, fullScreen=fullScreen, sizeHint=sizeHint, minimumSizeHint=minimumSizeHint, acceptDrops=acceptDrops, windowTitle=windowTitle, windowIcon=windowIcon, windowIconText=windowIconText, windowOpacity=windowOpacity, windowModified=windowModified, toolTip=toolTip, toolTipDuration=toolTipDuration, statusTip=statusTip, whatsThis=whatsThis, accessibleName=accessibleName, accessibleDescription=accessibleDescription, accessibleIdentifier=accessibleIdentifier, layoutDirection=layoutDirection, autoFillBackground=autoFillBackground, styleSheet=styleSheet, locale=locale, windowFilePath=windowFilePath, inputMethodHints=inputMethodHints)
