@@ -551,21 +551,20 @@ class Presentacion(QW.QWidget):
     def __init__(self, sesion):
         super().__init__()
 
-        #Sesion
-        editar = sesion["editar"]
+        editar = False
 
         #Datos
         datos = (1, "Robot SUMO", "imagen", "principal")
 
         #Datos de contenido de proyectos
         datos_contenido = [
-            (0, "Encabezado", "Descripcion"),
-            (0, "Encabezado", "Descripcion"),
-            (0, "Encabezado", "Descripcion")
+            (0, "Encabezado", "Descripcion", None, False),
+            (0, "Encabezado", "Descripcion", None, False),
+            (0, "Encabezado", "Descripcion", None, False)
         ]
 
         #Instancias de los contenidos del proyecto
-        contenidos = []
+        self.contenidos = []
         
         #Imagen principal en caso de ser presentacion principal
         if datos != None:
@@ -583,9 +582,15 @@ class Presentacion(QW.QWidget):
         #Titulo
         etiqueta = QW.QLabel(datos[1])
 
+        #Creacion de contenido
+        if datos_contenido == []:
+            for i in datos_contenido:
+                self.contenidos = ContenidoPresentacion(i[0], i[1], i[2], i[3], i[4])
+
 class ContenidoPresentacion(QW.QWidget):
     def __init__(self, id, encabezado, desc, imagen, editar):
         super().__init__()
+        self.resize(10, 20)
 
         #Contenedores
         contenedor_ventana = QW.QHBoxLayout(self)
@@ -597,8 +602,14 @@ class ContenidoPresentacion(QW.QWidget):
         contenedor_estilos_contenido = QW.QFrame()
 
         #Etiquetas
-        self.etiqueta_encabezado = QW.QLabel(encabezado)
-        self.etiqueta_descripcion = QW.QLabel(desc)
+        if editar == True:
+            self.etiqueta_encabezado = QW.QLineEdit(encabezado)
+            self.etiqueta_descripcion = QW.QTextEdit(desc)
+            self.etiqueta_descripcion.setReadOnly(True)
+        else:
+            self.etiqueta_encabezado = QW.QLabel(encabezado)
+            self.etiqueta_descripcion = QW.QLabel(desc)
+            
 
         #Imagen
         if imagen != None:
@@ -609,20 +620,19 @@ class ContenidoPresentacion(QW.QWidget):
             imagen_complementaria.setPixmap(mapa_pixeles_imagen_complementaria)
 
         #Opciones editor
-        if editar == True:
+        # if editar == True:
             #Botones
-            boton_color_letra = QW.QPushButton("Cambiar color de la letra")
-            boton_color_letra.clicked.connect(lambda: self.abrirSelectorColorLetra())
+            # boton_color_letra = QW.QPushButton("Cambiar color de la letra")
+            # boton_color_letra.clicked.connect(lambda: self.abrirSelectorColorLetra())
             
             #Colores
-            self.color_letra = QW.QColorDialog()
-            self.color_letra.currentColorChanged.connect(lambda: self.cambiarColorLetra())
-
+            # self.color_letra = QW.QColorDialog()
+            # self.color_letra.currentColorChanged.connect(lambda: self.cambiarColorLetra())
 
         #Agregar Widgets
         self.contenedor_contenido.addWidget(self.etiqueta_encabezado)
         self.contenedor_contenido.addWidget(self.etiqueta_descripcion)
-        self.contenedor_contenido.addWidget(boton_color_letra)
+        # self.contenedor_contenido.addWidget(boton_color_letra)
 
         #Agregar contenedores
         contenedor_ventana.addWidget(contenedor_estilos_contenido)
@@ -633,10 +643,9 @@ class ContenidoPresentacion(QW.QWidget):
         self.show()
 
     def mostrarModoEdicion(self):
-        print()
+        
 
-    def abrirSelectorColorLetra(self):
-        self.color_letra.getColor(initial=QG.QColor(255, 0, 0), parent=self.contenedor_contenido, title="Color letra", options=QW.QColorDialog.ColorDialogOption.DontUseNativeDialog)
+        self.color_letra.getColor(initial=QG.QColor(255, 0, 0), title="Color letra", options=QW.QColorDialog.ColorDialogOption.NoButtons)
         print(self.color_letra.currentColor())
 
     def cambiarColorLetra(self):
