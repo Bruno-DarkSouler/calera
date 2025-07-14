@@ -76,7 +76,6 @@ class ConexionBaseDeDatos:
         """
         cursor.execute(consulta)
         resultado = cursor.fetchone()
-        cursor.close()
         return resultado
     
     def obtener_grupos_proyectos(self, id_proyecto):
@@ -166,26 +165,54 @@ class ConexionBaseDeDatos:
         cursor = self.conexion.cursor()
         cursor.execute('''
             INSERT INTO `usuarios_grupos`(`id_grupo`, `id_usuario`, rol, estado) VALUES ((SELECT MAX(`id`) FROM `grupos`),%s, 'lider', 'activo')
-        ''', (id_usuario))
+        ''', (id_usuario,))
         self.conexion.commit()
 
-    def crear_grupo(self, id_usuario, nombre, tema):
+    def crear_grupo(self, nombre):
         cursor = self.conexion.cursor()
         cursor.execute('''
-            INSERT INTO `proyectos`(`nombre`, `tema`, `id_creador`) VALUES (%s, %s, %s)
-        ''', (nombre, tema, id_usuario))
+            INSERT INTO `grupos`(`nombre`) VALUES (%s)
+        ''', (nombre,))
         self.conexion.commit()
 
-    def crear_nueva_presentacion(self, id_usuario, nombre, tema):
+    def enviar_solicitud(self, id_proyecto):
         cursor = self.conexion.cursor()
         cursor.execute('''
-            INSERT INTO `proyectos`(`nombre`, `tema`, `id_creador`) VALUES (%s, %s, %s)
-        ''', (nombre, tema, id_usuario))
+            INSERT INTO `solicitudes`(`estado`, `id_grupo`, `id_proyecto`) VALUES ('aceptado',(SELECT MAX(`id`) FROM `grupos`),%s)
+        ''', (id_proyecto,))
         self.conexion.commit()
 
-    def crear_nuevo_contenido(self, id_usuario, nombre, tema):
+    def crear_nueva_presentacion(self, nombre, id_grupo):
         cursor = self.conexion.cursor()
         cursor.execute('''
-            INSERT INTO `proyectos`(`nombre`, `tema`, `id_creador`) VALUES (%s, %s, %s)
-        ''', (nombre, tema, id_usuario))
+            INSERT INTO `presentaciones`(`encabezado`, `id_grupo`) VALUES (%s, %s)
+        ''', (nombre, id_grupo))
         self.conexion.commit()
+
+    def crear_presentacion_principal(self, nombre):
+        cursor = self.conexion.cursor()
+        cursor.execute('''
+            INSERT INTO `presentaciones`(`encabezado`, `id_grupo`, tipo) VALUES (%s, (SELECT MAX(`id`) FROM `grupos`), 'principal')
+        ''', (nombre,))
+        self.conexion.commit()
+
+    def crear_nuevo_contenido(self, encabezado, descripcion, id_presentacion):
+        cursor = self.conexion.cursor()
+        cursor.execute('''
+            INSERT INTO `contenido`(`subtitulo`, `contenido`, `id_presentacion`) VALUES (%s, %s, %s)
+        ''', (encabezado, descripcion, id_presentacion))
+        self.conexion.commit()
+
+    def administrar_usuario(self, id_u, nombre_u, email_u, permisos_u, id_actualizar):
+        cursor = self.conexion.cursor()
+        cursor.execute('''
+            UPDATE `usuarios` SET `id`=%s,`nombre`=%s,`email`=%s,`permisos`=%s WHERE id = %s
+        ''', (id_u, nombre_u, email_u, permisos_u, id_actualizar))
+        self.conexion.commit()
+
+    def obtener_usuarios_administrables(self):
+        cursor = self.conexion.cursor()
+        cursor.execute('''
+            SELECT `id`, `nombre`, `email`, `permisos` FROM `usuarios` WHERE permisos != 'AD';
+        ''')
+        return cursor.fetchall()

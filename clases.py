@@ -46,6 +46,7 @@ class VentanaPrincipal(QW.QMainWindow):
         self.boton_iniciar_sesion = QW.QPushButton("Iniciar Sesión")
         self.boton_registrar_usuario = QW.QPushButton("Registrarse")
         self.boton_cerrar_sesion = QW.QPushButton("Cerrar Sesión")
+        self.boton_administrador = QW.QPushButton("Administrar")
         boton_abrir_buscador_proyectos = QW.QPushButton("Ver más")
         boton = QW.QPushButton(proyectos[1])
 
@@ -54,6 +55,7 @@ class VentanaPrincipal(QW.QMainWindow):
         self.boton_iniciar_sesion.clicked.connect(lambda: self.abrirInicioSesion())
         self.boton_registrar_usuario.clicked.connect(lambda: self.abrirRegistroUsuario())
         self.boton_cerrar_sesion.clicked.connect(lambda: self.cerrarSesion())
+        self.boton_administrador.clicked.connect(lambda: self.abrirPanelAdministrador())
 
         #Etiqueta
         etiqueta_creditos = QW.QLabel("Desarrollado por Bruno Fornasar González")
@@ -72,7 +74,9 @@ class VentanaPrincipal(QW.QMainWindow):
         contenedor_perfil.addWidget(self.boton_iniciar_sesion, 2)
         contenedor_perfil.addWidget(self.boton_registrar_usuario, 2)
         contenedor_perfil.addWidget(self.boton_cerrar_sesion, 4)
+        contenedor_perfil.addWidget(self.boton_administrador, 4)
         self.boton_cerrar_sesion.hide()
+        self.boton_administrador.hide()
         contenedor_proyectos.addWidget(boton_abrir_buscador_proyectos)
         contenedor_proyectos.addWidget(etiqueta_creditos)
         contenedor_invitaciones.addWidget(etiqueta_invitaciones, 2)
@@ -134,6 +138,7 @@ class VentanaPrincipal(QW.QMainWindow):
         "}"
         self.boton_iniciar_sesion.setStyleSheet(estilos_generales_botones)
         self.boton_cerrar_sesion.setStyleSheet(estilos_generales_botones)
+        self.boton_administrador.setStyleSheet(estilos_generales_botones)
         self.boton_registrar_usuario.setStyleSheet(estilos_generales_botones)
         boton_abrir_buscador_proyectos.setStyleSheet(estilos_generales_botones)
         boton.setStyleSheet(estilos_generales_botones)
@@ -186,8 +191,13 @@ class VentanaPrincipal(QW.QMainWindow):
         self.close()
         self.form = FormularioRegistro(self.sesion)
 
+    def abrirPanelAdministrador(self):
+        self.close()
+        self.panel = TablaUsuarios(self.sesion)
+
     def cerrarSesion(self):
         self.boton_cerrar_sesion.hide()
+        self.boton_administrador.hide()
         self.boton_iniciar_sesion.show()
         self.boton_registrar_usuario.show()
         self.imagen_perfil.setText("Inicie Sesión")
@@ -201,6 +211,8 @@ class VentanaPrincipal(QW.QMainWindow):
     def iniciarSesion(self):
         if self.sesion["id"] != 0:
             self.boton_cerrar_sesion.show()
+            if self.sesion["permiso"] == "AD":
+                self.boton_administrador.show()
             self.boton_iniciar_sesion.hide()
             self.boton_registrar_usuario.hide()
             self.imagen_perfil.setText("Hola, " + self.sesion["nombre"])
@@ -310,6 +322,12 @@ class BuscadorProyectos(QW.QWidget):
         boton_volver.clicked.connect(self.volverInicio)
         boton_volver.setStyleSheet(self.estilo_boton())
         header.addWidget(boton_volver, alignment=Qt.AlignmentFlag.AlignLeft)
+        boton_crear_nuevo_proyecto = QW.QPushButton("Crear Proyecto")
+        boton_crear_nuevo_proyecto.clicked.connect(self.abrirFormularioCrearProyecto)
+        boton_crear_nuevo_proyecto.setStyleSheet(self.estilo_boton())
+        header.addWidget(boton_crear_nuevo_proyecto, alignment=Qt.AlignmentFlag.AlignLeft)
+        if self.sesion["permiso"] == "UE":
+            boton_crear_nuevo_proyecto.hide()
         contenedor_lista.addLayout(header)
 
         if proyectos:
@@ -363,6 +381,10 @@ class BuscadorProyectos(QW.QWidget):
             "background-color: #00409f;"
             "}"
         )
+    
+    def abrirFormularioCrearProyecto(self):
+        self.close()
+        self.form = FormularioNuevoProyecto(self.sesion)
 
     def abrirGruposProyecto(self, proyectos):
         fila = self.tabla_proyectos.currentRow()
@@ -383,6 +405,7 @@ class GruposProyecto(QW.QWidget):
         self.resize(600, 400)
 
         self.sesion = sesion
+        self.id_proyecto = id_proyecto
         self.conexion = ConexionBaseDeDatos()
 
         # Datos (simulados)
@@ -406,6 +429,20 @@ class GruposProyecto(QW.QWidget):
         """)
         boton_volver.clicked.connect(self.volverInicio)
         header.addWidget(boton_volver, alignment=Qt.AlignLeft)
+        boton_inscribirse = QW.QPushButton("Inscribirse")
+        boton_inscribirse.setStyleSheet("""
+            QPushButton {
+                background-color: #104dbf;
+                color: #dfecff;
+                border-radius: 3px;
+                padding: 10px;
+            }
+            QPushButton:hover {
+                background-color: #00409f;
+            }
+        """)
+        boton_inscribirse.clicked.connect(self.abrirFormularioInscripcion)
+        header.addWidget(boton_inscribirse, alignment=Qt.AlignLeft)
         contenedor_central.addLayout(header)
 
         # Título
@@ -436,6 +473,10 @@ class GruposProyecto(QW.QWidget):
     def volverInicio(self):
         self.close()
         VentanaPrincipal(self.sesion)
+
+    def abrirFormularioInscripcion(self):
+        self.close()
+        self.form = FormularioNuevoGrupo(self.sesion, self.id_proyecto)
 
 
 class GrupoDeProyecto(QW.QVBoxLayout):
@@ -483,7 +524,7 @@ class GrupoDeProyecto(QW.QVBoxLayout):
         boton_ver_proyecto.setStyleSheet(estilo_boton)
         boton_administrar.setStyleSheet(estilo_boton)
 
-        boton_ver_proyecto.clicked.connect(lambda: self.abrirProyecto(id_grupo, sesion, miembro))
+        boton_ver_proyecto.clicked.connect(lambda: self.abrirProyecto(id_grupo, sesion, miembro, id))
         boton_administrar.clicked.connect(lambda: self.abrirAdministradorProyectos(id))
 
         layout_botones = QW.QHBoxLayout()
@@ -499,9 +540,9 @@ class GrupoDeProyecto(QW.QVBoxLayout):
 
         self.ventana = ""
 
-    def abrirProyecto(self, id_grupo, sesion, miembro):
+    def abrirProyecto(self, id_grupo, sesion, miembro, id_presentacion):
         self.parentWidget().parentWidget().parentWidget().parentWidget().close()
-        Presentacion(self.sesion, id_grupo, miembro)
+        Presentacion(self.sesion, id_grupo, miembro, id_presentacion)
 
     def abrirAdministradorProyectos(self, id_grupo):
         self.parentWidget().parentWidget().parentWidget().parentWidget().close()
@@ -744,7 +785,7 @@ class PanelAdministradorGrupos(QW.QWidget):
         self.show()
 
 class Presentacion(QW.QWidget):
-    def __init__(self, sesion, id, miembro):
+    def __init__(self, sesion, id, miembro, id_presentacion):
         super().__init__()
 
         self.resize(800, 500)
@@ -752,10 +793,12 @@ class Presentacion(QW.QWidget):
         self.sesion = sesion
         self.id = id
         self.miembro = miembro
+        self.id_grupo = id_presentacion
         self.conexion = ConexionBaseDeDatos()
 
         self.presentaciones = self.conexion.obtener_presentaciones_hermanas(id)
         datos = self.conexion.obtener_datos_presentacion(id)
+        print(self.id_grupo, id)
         self.setWindowTitle(datos[1])
         datos_contenido = self.conexion.obtener_contenido_presentacion(id)
         self.contenidos = []
@@ -856,7 +899,7 @@ class Presentacion(QW.QWidget):
 
     def abrirFormularioNuevaPresentacion(self):
         self.close()
-        self.nuevo_form = FormularioNuevaPresentacion(self.sesion, self.id)
+        self.nuevo_form = FormularioNuevaPresentacion(self.sesion, self.id_grupo, self.id)
 
     def abrirFormularioNuevoContenido(self):
         self.close()
@@ -1080,6 +1123,7 @@ class FormularioNuevoProyecto(QW.QWidget):
     def __init__(self, sesion: dict):
         super().__init__()
         self.sesion = sesion
+        self.conexion = ConexionBaseDeDatos()
         self.setWindowTitle("Nuevo Proyecto")
 
         layout = QW.QVBoxLayout()
@@ -1102,6 +1146,8 @@ class FormularioNuevoProyecto(QW.QWidget):
 
         self.setLayout(layout)
 
+        self.show()
+
     def enviarFormulario(self):
         nombre = self.entrada_nombre_proyecto.text()
         tema = self.entrada_tema_proyecto.text()
@@ -1109,6 +1155,7 @@ class FormularioNuevoProyecto(QW.QWidget):
         print("Nombre del proyecto:", nombre)
         print("Tema del proyecto:", tema)
         print("ID Usuario:", self.sesion.get("id"))
+        self.conexion.crear_proyecto(self.sesion["id"], nombre, tema)
 
         self.close()
         self.ventana = BuscadorProyectos(self.sesion)
@@ -1118,6 +1165,7 @@ class FormularioNuevoGrupo(QW.QWidget):
     def __init__(self, sesion: dict, id_proyecto):
         super().__init__()
         self.sesion = sesion
+        self.conexion = ConexionBaseDeDatos()
         self.setWindowTitle("Nuevo grupo")
 
         self.id_proyecto = id_proyecto
@@ -1137,17 +1185,25 @@ class FormularioNuevoGrupo(QW.QWidget):
         self.boton_crear.clicked.connect(self.enviarFormulario)
         layout.addWidget(self.boton_crear)
 
+        self.show()
+
     def enviarFormulario(self):
         nombre_grupo = self.entrada_nombre_grupo.text()
         print(f"Datos ingresados: {nombre_grupo}")
+        self.conexion.crear_grupo(nombre_grupo)
+        self.conexion.ingresar_lider_grupo(self.sesion["id"])
+        self.conexion.enviar_solicitud(self.id_proyecto)
+        self.conexion.crear_presentacion_principal(nombre_grupo)
         self.close()
         self.ventana = BuscadorProyectos(self.sesion)
 
 class FormularioNuevaPresentacion(QW.QWidget):
-    def __init__(self, sesion: dict, id_grupo: int):
+    def __init__(self, sesion: dict, id_grupo: int, id_presentacion):
         super().__init__()
         self.sesion = sesion
         self.id_grupo = id_grupo
+        self.id_presentacion = id_presentacion
+        self.conexion = ConexionBaseDeDatos()
         self.setWindowTitle("Nueva presentación")
 
         layout = QW.QVBoxLayout(self)
@@ -1170,8 +1226,9 @@ class FormularioNuevaPresentacion(QW.QWidget):
     def enviarFormulario(self):
         nombre_presentacion = self.entrada_nombre_presentacion.text()
         print(f"Datos ingresados: {nombre_presentacion}, ID grupo: {self.id_grupo}")
+        self.conexion.crear_nueva_presentacion(nombre_presentacion, self.id_grupo)
         self.close()
-        self.ventana = BuscadorProyectos(self.sesion)
+        self.ventana = Presentacion(self.sesion, self.id_presentacion, True)
 
 class FormularioNuevoContenido(QW.QWidget):
     def __init__(self, sesion: dict, id_presentacion: int):
@@ -1179,6 +1236,8 @@ class FormularioNuevoContenido(QW.QWidget):
         self.sesion = sesion
         self.id_presentacion = id_presentacion
         self.setWindowTitle("Nuevo contenido")
+
+        self.conexion = ConexionBaseDeDatos()
 
         layout = QW.QVBoxLayout(self)
 
@@ -1205,13 +1264,15 @@ class FormularioNuevoContenido(QW.QWidget):
         encabezado = self.entrada_encabezado.text()
         descripcion = self.entrada_descripcion.toPlainText()
         print(f"Datos ingresados: Encabezado: {encabezado}, Descripción: {descripcion}, ID presentación: {self.id_presentacion}")
+        self.conexion.crear_nuevo_contenido(encabezado, descripcion, self.id_presentacion)
         self.close()
-        self.ventana = BuscadorProyectos(self.sesion)
+        self.ventana = Presentacion(self.sesion, self.id_presentacion, True)
 
 class TablaUsuarios(QW.QWidget):
     def __init__(self, sesion: dict):
         super().__init__()
         self.sesion = sesion
+        self.conexion = ConexionBaseDeDatos()
         self.setWindowTitle("Gestión de Usuarios")
         self.setStyleSheet("background-color: #000d20; color: #dfecff;")
 
@@ -1230,16 +1291,12 @@ class TablaUsuarios(QW.QWidget):
                                  "QTableWidget { background-color: #dfecff; color: black; }")
 
         # Datos de prueba
-        datos_usuarios = [
-            (1, "Juan Pérez", "juan@example.com", "PR"),
-            (2, "María Gómez", "maria@example.com", "AD"),
-            (3, "Lucas Díaz", "lucas@example.com", "UE"),
-        ]
+        self.datos_usuarios = self.conexion.obtener_usuarios_administrables()
 
-        self.tabla.setRowCount(len(datos_usuarios))
+        self.tabla.setRowCount(len(self.datos_usuarios))
         permisos_opciones = ["UE", "PR", "AD"]
 
-        for fila, (id_u, nombre, email, permiso) in enumerate(datos_usuarios):
+        for fila, (id_u, nombre, email, permiso) in enumerate(self.datos_usuarios):
             self.tabla.setItem(fila, 0, QW.QTableWidgetItem(str(id_u)))
             self.tabla.setItem(fila, 1, QW.QTableWidgetItem(nombre))
             self.tabla.setItem(fila, 2, QW.QTableWidgetItem(email))
@@ -1269,6 +1326,7 @@ class TablaUsuarios(QW.QWidget):
         email = self.tabla.item(fila, 2).text()
         permisos = self.tabla.cellWidget(fila, 3).currentText()
         print(f"Fila actualizada: ID: {id_u}, Nombre: {nombre}, Email: {email}, Permisos: {permisos}")
+        self.conexion.administrar_usuario(id_u, nombre, email, permisos, self.datos_usuarios[fila][0])
 
     def volverInicio(self):
         self.close()
