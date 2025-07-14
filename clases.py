@@ -443,6 +443,8 @@ class GruposProyecto(QW.QWidget):
         """)
         boton_inscribirse.clicked.connect(self.abrirFormularioInscripcion)
         header.addWidget(boton_inscribirse, alignment=Qt.AlignLeft)
+        if self.sesion["id"] == 0:
+            boton_inscribirse.hide()
         contenedor_central.addLayout(header)
 
         # Título
@@ -903,7 +905,7 @@ class Presentacion(QW.QWidget):
 
     def abrirFormularioNuevoContenido(self):
         self.close()
-        self.form_contenido = FormularioNuevoContenido(self.sesion, self.id)
+        self.form_contenido = FormularioNuevoContenido(self.sesion, self.id, self.id_grupo)
 
 
 class ContenidoPresentacion(QW.QHBoxLayout):
@@ -1125,27 +1127,39 @@ class FormularioNuevoProyecto(QW.QWidget):
         self.sesion = sesion
         self.conexion = ConexionBaseDeDatos()
         self.setWindowTitle("Nuevo Proyecto")
+        self.setStyleSheet("background-color: #000d20; color: #dfecff;")
 
         layout = QW.QVBoxLayout()
 
+        header = QW.QHBoxLayout()
+        boton_volver = QW.QPushButton("Volver al Inicio")
+        boton_volver.setStyleSheet("QPushButton { background-color: #004dbf; color: #dfecff; padding: 5px; border-radius: 4px; } QPushButton:hover { background-color: #00409f; }")
+        boton_volver.clicked.connect(self.volverInicio)
+        header.addWidget(boton_volver)
+        header.addStretch()
+        layout.addLayout(header)
+
         titulo = QW.QLabel("Formulario Nuevo Proyecto")
         titulo.setAlignment(Qt.AlignCenter)
+        titulo.setStyleSheet("font-size: 24px; font-weight: bold;")
         layout.addWidget(titulo)
 
         self.entrada_nombre_proyecto = QW.QLineEdit()
         self.entrada_nombre_proyecto.setPlaceholderText("Nombre del proyecto")
+        self.entrada_nombre_proyecto.setStyleSheet("padding: 8px; border-radius: 4px;")
         layout.addWidget(self.entrada_nombre_proyecto)
 
         self.entrada_tema_proyecto = QW.QLineEdit()
         self.entrada_tema_proyecto.setPlaceholderText("Tema del proyecto")
+        self.entrada_tema_proyecto.setStyleSheet("padding: 8px; border-radius: 4px;")
         layout.addWidget(self.entrada_tema_proyecto)
 
         boton_crear = QW.QPushButton("Crear Proyecto")
+        boton_crear.setStyleSheet("QPushButton { background-color: #004dbf; color: #dfecff; padding: 10px; border-radius: 4px; } QPushButton:hover { background-color: #00409f; }")
         boton_crear.clicked.connect(self.enviarFormulario)
         layout.addWidget(boton_crear)
 
         self.setLayout(layout)
-
         self.show()
 
     def enviarFormulario(self):
@@ -1161,30 +1175,47 @@ class FormularioNuevoProyecto(QW.QWidget):
         self.ventana = BuscadorProyectos(self.sesion)
         self.ventana.show()
 
+    def volverInicio(self):
+        self.close()
+        self.ventana = VentanaPrincipal(self.sesion)
+        self.ventana.show()
+
+
 class FormularioNuevoGrupo(QW.QWidget):
     def __init__(self, sesion: dict, id_proyecto):
         super().__init__()
         self.sesion = sesion
         self.conexion = ConexionBaseDeDatos()
-        self.setWindowTitle("Nuevo grupo")
-
         self.id_proyecto = id_proyecto
+        self.setWindowTitle("Nuevo grupo")
+        self.setStyleSheet("background-color: #000d20; color: #dfecff;")
 
-        layout = QW.QVBoxLayout(self)
+        layout = QW.QVBoxLayout()
 
-        self.titulo = QW.QLabel("Crear un Nuevo Grupo")
-        self.titulo.setAlignment(Qt.AlignCenter)
-        self.titulo.setStyleSheet("font-size: 18px; font-weight: bold;")
-        layout.addWidget(self.titulo)
+        header = QW.QHBoxLayout()
+        boton_volver = QW.QPushButton("Volver al Inicio")
+        boton_volver.setStyleSheet("QPushButton { background-color: #004dbf; color: #dfecff; padding: 5px; border-radius: 4px; } QPushButton:hover { background-color: #00409f; }")
+        boton_volver.clicked.connect(self.volverInicio)
+        header.addWidget(boton_volver)
+        header.addStretch()
+        layout.addLayout(header)
+
+        titulo = QW.QLabel("Crear un Nuevo Grupo")
+        titulo.setAlignment(Qt.AlignCenter)
+        titulo.setStyleSheet("font-size: 24px; font-weight: bold;")
+        layout.addWidget(titulo)
 
         self.entrada_nombre_grupo = QW.QLineEdit()
         self.entrada_nombre_grupo.setPlaceholderText("Nombre grupo")
+        self.entrada_nombre_grupo.setStyleSheet("padding: 8px; border-radius: 4px;")
         layout.addWidget(self.entrada_nombre_grupo)
 
         self.boton_crear = QW.QPushButton("Crear grupo")
+        self.boton_crear.setStyleSheet("QPushButton { background-color: #004dbf; color: #dfecff; padding: 10px; border-radius: 4px; } QPushButton:hover { background-color: #00409f; }")
         self.boton_crear.clicked.connect(self.enviarFormulario)
         layout.addWidget(self.boton_crear)
 
+        self.setLayout(layout)
         self.show()
 
     def enviarFormulario(self):
@@ -1196,6 +1227,13 @@ class FormularioNuevoGrupo(QW.QWidget):
         self.conexion.crear_presentacion_principal(nombre_grupo)
         self.close()
         self.ventana = BuscadorProyectos(self.sesion)
+        self.ventana.show()
+
+    def volverInicio(self):
+        self.close()
+        self.ventana = VentanaPrincipal(self.sesion)
+        self.ventana.show()
+
 
 class FormularioNuevaPresentacion(QW.QWidget):
     def __init__(self, sesion: dict, id_grupo: int, id_presentacion):
@@ -1205,22 +1243,34 @@ class FormularioNuevaPresentacion(QW.QWidget):
         self.id_presentacion = id_presentacion
         self.conexion = ConexionBaseDeDatos()
         self.setWindowTitle("Nueva presentación")
+        self.setStyleSheet("background-color: #000d20; color: #dfecff;")
 
-        layout = QW.QVBoxLayout(self)
+        layout = QW.QVBoxLayout()
 
-        self.titulo = QW.QLabel("Crear una Nueva Presentación")
-        self.titulo.setAlignment(Qt.AlignCenter)
-        self.titulo.setStyleSheet("font-size: 18px; font-weight: bold;")
-        layout.addWidget(self.titulo)
+        header = QW.QHBoxLayout()
+        boton_volver = QW.QPushButton("Volver al Inicio")
+        boton_volver.setStyleSheet("QPushButton { background-color: #004dbf; color: #dfecff; padding: 5px; border-radius: 4px; } QPushButton:hover { background-color: #00409f; }")
+        boton_volver.clicked.connect(self.volverInicio)
+        header.addWidget(boton_volver)
+        header.addStretch()
+        layout.addLayout(header)
+
+        titulo = QW.QLabel("Crear una Nueva Presentación")
+        titulo.setAlignment(Qt.AlignCenter)
+        titulo.setStyleSheet("font-size: 24px; font-weight: bold;")
+        layout.addWidget(titulo)
 
         self.entrada_nombre_presentacion = QW.QLineEdit()
         self.entrada_nombre_presentacion.setPlaceholderText("Nombre presentacion")
+        self.entrada_nombre_presentacion.setStyleSheet("padding: 8px; border-radius: 4px;")
         layout.addWidget(self.entrada_nombre_presentacion)
 
         self.boton_crear = QW.QPushButton("Crear presentación")
+        self.boton_crear.setStyleSheet("QPushButton { background-color: #004dbf; color: #dfecff; padding: 10px; border-radius: 4px; } QPushButton:hover { background-color: #00409f; }")
         self.boton_crear.clicked.connect(self.enviarFormulario)
         layout.addWidget(self.boton_crear)
 
+        self.setLayout(layout)
         self.show()
 
     def enviarFormulario(self):
@@ -1228,36 +1278,56 @@ class FormularioNuevaPresentacion(QW.QWidget):
         print(f"Datos ingresados: {nombre_presentacion}, ID grupo: {self.id_grupo}")
         self.conexion.crear_nueva_presentacion(nombre_presentacion, self.id_grupo)
         self.close()
-        self.ventana = Presentacion(self.sesion, self.id_presentacion, True)
+        self.ventana = Presentacion(self.sesion, self.id_presentacion, True, self.id_grupo)
+        self.ventana.show()
+
+    def volverInicio(self):
+        self.close()
+        self.ventana = VentanaPrincipal(self.sesion)
+        self.ventana.show()
+
 
 class FormularioNuevoContenido(QW.QWidget):
-    def __init__(self, sesion: dict, id_presentacion: int):
+    def __init__(self, sesion: dict, id_presentacion: int, id_grupo):
         super().__init__()
         self.sesion = sesion
+        self.id_grupo = id_grupo
         self.id_presentacion = id_presentacion
-        self.setWindowTitle("Nuevo contenido")
-
         self.conexion = ConexionBaseDeDatos()
+        self.setWindowTitle("Nuevo contenido")
+        self.setStyleSheet("background-color: #000d20; color: #dfecff;")
 
-        layout = QW.QVBoxLayout(self)
+        layout = QW.QVBoxLayout()
 
-        self.titulo = QW.QLabel("Crear Nuevo Contenido")
-        self.titulo.setAlignment(Qt.AlignCenter)
-        self.titulo.setStyleSheet("font-size: 18px; font-weight: bold;")
-        layout.addWidget(self.titulo)
+        header = QW.QHBoxLayout()
+        boton_volver = QW.QPushButton("Volver al Inicio")
+        boton_volver.setStyleSheet("QPushButton { background-color: #004dbf; color: #dfecff; padding: 5px; border-radius: 4px; } QPushButton:hover { background-color: #00409f; }")
+        boton_volver.clicked.connect(self.volverInicio)
+        header.addWidget(boton_volver)
+        header.addStretch()
+        layout.addLayout(header)
+
+        titulo = QW.QLabel("Crear Nuevo Contenido")
+        titulo.setAlignment(Qt.AlignCenter)
+        titulo.setStyleSheet("font-size: 24px; font-weight: bold;")
+        layout.addWidget(titulo)
 
         self.entrada_encabezado = QW.QLineEdit()
         self.entrada_encabezado.setPlaceholderText("Encabezado")
+        self.entrada_encabezado.setStyleSheet("padding: 8px; border-radius: 4px;")
         layout.addWidget(self.entrada_encabezado)
 
         self.entrada_descripcion = QW.QTextEdit()
         self.entrada_descripcion.setPlaceholderText("Descripción")
+        self.entrada_descripcion.setStyleSheet("padding: 8px; border-radius: 4px;")
         layout.addWidget(self.entrada_descripcion)
 
         self.boton_crear = QW.QPushButton("Crear contenido")
+        self.boton_crear.setStyleSheet("QPushButton { background-color: #004dbf; color: #dfecff; padding: 10px; border-radius: 4px; } QPushButton:hover { background-color: #00409f; }")
         self.boton_crear.clicked.connect(self.enviarFormulario)
         layout.addWidget(self.boton_crear)
 
+        self.setLayout(layout)
         self.show()
 
     def enviarFormulario(self):
@@ -1266,7 +1336,13 @@ class FormularioNuevoContenido(QW.QWidget):
         print(f"Datos ingresados: Encabezado: {encabezado}, Descripción: {descripcion}, ID presentación: {self.id_presentacion}")
         self.conexion.crear_nuevo_contenido(encabezado, descripcion, self.id_presentacion)
         self.close()
-        self.ventana = Presentacion(self.sesion, self.id_presentacion, True)
+        self.ventana = Presentacion(self.sesion, self.id_presentacion, True, self.id_grupo)
+        self.ventana.show()
+
+    def volverInicio(self):
+        self.close()
+        self.ventana = VentanaPrincipal(self.sesion)
+        self.ventana.show()
 
 class TablaUsuarios(QW.QWidget):
     def __init__(self, sesion: dict):
