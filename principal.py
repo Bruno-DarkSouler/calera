@@ -2,7 +2,11 @@ from clases import *
 
 app = QW.QApplication()
 
-sesion = {}
-grupos_proyecto = Presentacion(sesion, 1)
+sesion = {
+    "id": 0,
+    "nombre": "",
+    "permiso": "UE"
+}
+grupos_proyecto = TablaUsuarios(sesion)
 
 app.exec()
